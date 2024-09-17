@@ -42,7 +42,8 @@ negative_v12_bo <- v12 < 0
 negative_count <- sum(negative_v12_bo)
 print(negative_count)
 
-# Exercise B.7
+# Exercise B.7 Generate the vector g which contains first 3 times the character value 'weak' followed by 2 times the
+# character value 'strong'. Hint: Use the rep() function!
 weak <- rep('weak', 3)
 strong <- rep('strong', 2)
 combined <- c(weak, strong)
@@ -88,12 +89,22 @@ xIs0or10 <- which(x %in% c(0,10))
 
 # Exercise C.10) Determine the index of those elements in x which have the same value as the preceding one. Hint: use
 # the command diff().
-xIndex <- which(x %in% c(x = x-1))
+xDiff <- diff(x, lag = 1, difference = 1)
+xIndex <- which(xDiff %in% c(0))+1
 
-print(x)
+# Exercise C.11) Consider x and y as paired observations. Make a vector of those elements of x for which y takes the
+# value 5.
+yObs <- which(y %in% c(5))
+pairedObservations <- x[c(yObs)]
 
+# Exercise C.12) Determine the indices for which x and y have the same value.
+sameValuesXandY <- which(x == y)
 
+# Exercise 
 
+# Exercise 
+
+# Exercise 
 
 
 
