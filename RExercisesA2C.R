@@ -100,9 +100,12 @@ pairedObservations <- x[c(yObs)]
 # Exercise C.12) Determine the indices for which x and y have the same value.
 sameValuesXandY <- which(x == y)
 
-# Exercise 
+# Exercise Make a vector which from every pair of x and y chooses the largest of the two values. Hint: use the
+# command ifelse().
+largestXorY <- ifelse(x < y, y, x)
 
-# Exercise 
+# Exercise C.14) Solve the exercise above even more easily with the command pmax()
+largestXorYv2 <- pmax(x, y)
 
 # Exercise 
 
