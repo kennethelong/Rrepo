@@ -1,0 +1,265 @@
+---
+title: "Working with data in files"
+format: html
+---
+
+## Introduction
+
+In this exercise you are asked to use the exercise qmd file (this file) as a starting point and modify it to answer all parts of the exercise.
+The file should "work out of the box" in the sense that once you have downloaded the file and opened it in RStudio you can press "Render/Knit" (Ctrl+Shift+K) and a rendered html document should pop-up.
+Several R code chunks later on needs to be modified by you to work correctly and they have been disabled by setting the chunk option `eval: false`.
+Once you start working on the exercise you can press the "play button" (Ctrl+Shift+Enter inside the chunk) chunk by chunk as you progress.
+Once a given chunk is working correctly you can delete or change the option `eval: false` and press "Render/Knit" (Ctrl+Shift+K) to see that the entire document is still rendering correctly.
+
+We start by loading `tidyverse` and setting a theme for `ggplot2`:
+
+```{r}
+library(tidyverse)
+library(dplyr)
+theme_set(theme_bw())
+```
+
+### The package `here`
+
+When we start working with local files on our computer the path to the files becomes important.
+The package `here` can help make it easier to specify the correct path in a way that can be shared among people on different computers working on the same project. 
+If you have not installed it yet please do so now (either through the menu in RStudio or by running the command `install.packages("here")` in the console).
+We usually don't load the `here` package but simply use the main function `here()` by calling it with the package name `here` in front like this:
+```{r}
+here::here()
+```
+
+This prints the location the `here` package considers the root/home of your current R project.
+
+### Downloading and extracting data
+
+Download the zip-file `population.zip` from the course Moodle page and extract it to a (new) folder 'population' in the project directory (it can be in a sub-directory as long as it is under the main project directory).
+If you don't know how to extract the zip-file you can (on Windows) for example either right-click -> Extract, use 7Zip, or ...
+
+## Exercise 1: Reading in data the straight forward way
+
+### Exercise 1.1: Read in data graphically in RStudio
+
+Use RStudio's interface to read in the data file called `congo.txt` (Go to "Environment" tab and press "Import Dataset" > "From text (readr) ..."). You need to:
+
+1. Click "Browse" and find the relevant file
+2. Change the "Delimitor" to be "Tab"
+3. Note (copy-paste) the command used to read in data
+4. Press import
+
+Your command should look something like (note the code in the chunk below is not evaluated due to the option `eval: false`):
+```{r}
+#| eval: false
+library(readr)
+congo <- read_delim("Data/congo.txt", 
+                    delim = "\t", 
+                    escape_double = FALSE, 
+                    trim_ws = TRUE)
+View(congo)
+```
+The first line is loading `readr` which is part of `tidyverse` and not necassary since we already loaded that.
+The last line opens the data viewer in RStudio and we don't want to do that everytime we rerun the command, so we only need to save the middle part.
+**Note:** If your command uses the base function `read.delim()` you have chosen the wrong option in the graphical interface, so please make sure to choose "From text (readr)".
+
+### Exercise 1.2: Using `here::here()`
+
+Make an new chunk below where you modify your command to use the `here::here()` command to specify the data path (something like `read_delim(here::here("SOME", "PATH", "TO", "population", "congo.txt"), ...)`)
+
+```{r}
+#| eval: false
+library(readr)
+congo <- read_delim(here::here("Data", "congo.txt"), 
+                    delim = "\t", 
+                    escape_double = FALSE, 
+                    trim_ws = TRUE)
+View(congo)
+
+```
+
+
+### Exercise 1.2: Changing data types
+
+Sometimes we need to specify the data types when reading in data.
+In this case `read_delim()` did a good job guessing everything was real numbers (doubles/numeric), but for the sake of illustration say it is important for us to have the year and population numbers as integer and density as double (actually the density fraction has been rounded to integer in the data, so it could also be integer).
+We can specify each column's data type with the `cols()` function.
+```{r}
+colspec <- cols(year = col_integer(),
+                pop = col_integer(),
+                pop.m = col_integer(),
+                pop.f = col_integer(),
+                dens = col_double())
+```
+
+Your exercise is to modify the command below to correctly use `here::here()` and the column specification `colspec` we just made to read in the data (add argument `col_types = colspec`) and make sure the chuck is evaluated (remove or change `eval: false`):
+```{r}
+#| eval: true
+data_dir <- here::here("Data")
+colspec <- cols(year = col_integer(),
+                pop = col_integer(),
+                pop.m = col_integer(),
+                pop.f = col_integer(),
+                dens = col_double())
+congo <- read_delim(here::here(data_dir, "congo.txt"), col_types = colspec, 
+    delim = "\t", escape_double = FALSE,
+    trim_ws = TRUE)
+View(congo)
+```
+
+
+### Exercise 1.3: Reading in all data files
+
+Add lines to the chunk below to read in data from all 8 countries (remember to turn chunk evaluation on once it works):
+
+```{r}
+#| eval: false
+data_dir <- here::here("Data")
+congo <- read_delim(here::here(data_dir, "congo.txt"), 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+denmark <- read_delim(here::here(data_dir, "denmark.txt"), 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+ghana <- read_delim(here::here(data_dir, "ghana.txt"), 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+ireland <- read_delim(here::here(data_dir, "ireland.txt"), 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+japan <- read_delim(here::here(data_dir, "japan.txt"), 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+nepal <- read_delim(here::here(data_dir, "nepal.txt"), 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+usa <- read_delim(here::here(data_dir, "usa.txt"), 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+russia <- read_delim(here::here(data_dir, "russia.txt"), 
+    delim = "\t", escape_double = FALSE, 
+    trim_ws = TRUE)
+View(congo)
+View(denmark)
+View(ghana)
+View(ireland)
+View(japan)
+View(nepal)
+View(russia)
+```
+
+### Exercise 1.4: Add information to each data set and combine
+
+This command adds the country to each data set (remember to turn chunk evaulation on):
+
+```{r}
+#| eval: false
+congo <- congo |> mutate(country = "Congo")
+denmark <- denmark |> mutate(country = "Denmark")
+ghana <- ghana |> mutate(country = "Ghana")
+ireland <- ireland |> mutate(country = "Ireland")
+japan <- japan |> mutate(country = "Japan")
+nepal <- nepal |> mutate(country = "Nepal")
+russia <- russia |> mutate(country = "Russia")
+usa <- usa |> mutate(country = "US")
+View(usa)
+```
+
+Modify the command below to use `bind_rows()` to combine all data sets into a single data set `popstat1`:
+
+```{r}
+popstat1 <- bind_rows(congo, denmark, ghana, ireland, japan, nepal, russia, usa)
+View(popstat1)
+```
+
+## Exercise 2: Reading in data programatically
+
+### Exercise 2.1: Write your own function to read data
+
+Modify this function such that it takes a single filename as input and outputs the relevant data set (as a `tibble`) with an additional column `country` containing the filename the data comes from (e.g. `congo.txt` for Congo), and test that it works as expected for e.g. Congo (i.e. run `read_country("congo.txt")` once you think the function works):
+```{r}
+fname <- "ghana.txt"
+read_country <- function(fname) {
+  d <- read_delim(here::here("Data", fname), delim = "\t", col_types = colspec) |> 
+    mutate(country = sub("\\.txt$", "", fname))
+  return(d)
+}
+read_country <- function(fname) {
+  d <- read_delim(here::here("Data", fname), delim = "\t", col_types = colspec) |> 
+    mutate(country = sub("\\.txt$", "", fname))
+  return(d)
+}
+result <- read_country(fname)
+View(result)
+```
+
+### Exercise 2.2: Read a list of data files and combine them
+
+Modify the use of `list.files()` to make a vector of filenames for every country:
+```{r}
+fls <- list.files(here::here("Data"), pattern = "*.txt", all.files = FALSE, full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
+
+data_list <- lapply(fls, )
+
+allCountries <- function(fls){
+  
+}
+
+```
+
+Modify the command below to use `lapply` with your own function and the `fls` vector of filenames to make a list of data sets (`tibble`s) (remember to turn on chunk evaluation):
+
+```{r}
+#| eval: false
+data_list <- lapply()
+```
+
+Modify the command to use `bind_rows()` to combine the results to a single data set (`tibble`):
+```{r}
+popstat2 <- bind_rows()
+```
+
+### Exercise 2.3: Modifying the country name
+
+Try to understand how either `str_sub()` or `str_replace()` (both from `stringr` package) can be used to remove the last `.txt` from the country name in `popstat2`.
+The following can be an inspiration (not giving the correct values as is):
+```{r}
+x <- "congo.txt"
+str_sub(x, 1, 5)
+str_sub(x, end = -3)
+str_replace(x, "xt", "")
+```
+
+Now use your knowledge and `str_to_title()` and `mutate()` to change the `country` column of `popstat2` to have one of the values `Congo`, `Denmark`, ..., `Russia`, `Usa` by modifying this command:
+```{r}
+popstat2 <- popstat2 |> 
+  mutate()
+```
+
+### Exercise 2.4 (extra -- skip if difficult):
+
+Use `case_when()` together with mutate to change `Usa` to `US` in the `country` column (remember to turn on chunk evaluation when it works):
+```{r}
+#| eval: false
+popstat2 <- popstat2 |> 
+  mutate() |> 
+  mutate(case_when())
+```
+
+## Exercise 3: Data summaries, cleaning and plotting
+
+### Exercise 3.1:
+
+Use `group_by()` and/or `count()` to find how many observations there are for each country (insert your own chunk). 
+
+### Exercise 3.2:
+
+It seems like the countries have different years represented. 
+Find out which and clean the data such that all countries have data 
+for the same years (insert your own chunk).
+
+### Exercise 3.3:
+
+Make a line plot showing the `pop` for each `year` and `country`.
+Remember to change labels. 
+Also make the y axis labels having a thousand separator 
+(hint: `labels = scales::comma_format()`).
+(Insert your own chunk.)
