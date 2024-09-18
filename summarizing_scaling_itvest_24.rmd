@@ -1,0 +1,496 @@
+---
+title: Summarizing data and scaling features
+author: Søren Højsgaard
+fontsize: 12pt
+output: 
+  slidy_presentation:
+    toc: true
+    toc_depth: 
+    slide_level: 3
+    number_sections: true
+  beamer_presentation:
+    toc: true
+    slide_level: 3
+  pdf_document:
+    toc: true
+    toc_depth: 3
+    number_sections: true
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.height=4, size="footnotesize", cache=!TRUE, warning=FALSE, message=FALSE)
+options("digits"=2, "width"=80)
+knitr::opts_chunk$set(echo = T)
+library(tidyverse)
+library(pander)
+library(cowplot)
+library(ggplot2)
+def.chunk.hook  <- knitr::knit_hooks$get("chunk")
+knitr::knit_hooks$set(chunk = function(x, options) {
+  x <- def.chunk.hook(x, options)
+  paste0("\n \\", "scriptsize","\n\n", x, "\n\n \\scriptsize")
+})
+#theme_set(theme(legend.position="none"))
+```
+
+# Summarizing data
+
+## Example data: potatoes
+
+Weight and size of 20 potatoes. Weight in grams; size in millimeter.
+There are two sizes: ‘length’ is the longest length and ‘width’ is the
+shortest length across a potato.
+
+```{r}
+options("digits"=3)
+dat <- doBy::potatoes
+head(dat)
+dim(dat)
+```
+
+```{r}
+y <- dat$weight ## grams
+y
+```
+
+## Looking at data
+
+```{r}
+sort(y)
+```
+
+```{r}
+## hist(y) ## Default
+ggplot(dat, aes(x=weight)) + geom_histogram(binwidth=10) + theme_minimal()
+```
+
+## Measures of location and spread
+
+### A language for data
+
+We have $n=20$ observations in the vector $y$. Denote these symbolically
+by \begin{align}
+  y_1, y_2, y_3, \dots, y_{20}
+\end{align} and they read `y one`, `y two` etc.
+
+For the sum $y_1 + y_2 + y_3 + \dots +y_{20}$ we write \begin{align}
+  y_. = \Sigma_{i=1}^{20} y_i = y_1 + y_2 + y_3 + \dots + y_{20}
+\end{align} and the left hand side reads "y dot" and
+$\Sigma_{i=1}^{20} y_i$ reads "the sum of $y_i$ as $i$ goes from $1$ to
+$n$". The symbol $y.$ is of course an arbitrary name for the sum.
+
+If we divide $y_.$ by the number of observations $n$ (here $n=20$) we
+get the mean (or average). It is common to write $\bar y$ (pronounced "y
+bar") for the average: \begin{align}
+  \bar y = 
+  \frac{1}{20} y_. =
+  \frac{1}{20} \sum_{i=1}^{20} y_i
+\end{align}
+
+### Measures of location
+
+There are many different measures of location. The mean (or avarage) is
+the most commonly used.
+
+$$
+ \bar y = \frac 1 n \sum_{i=1}^n y_i
+$$
+
+```{r }
+mean(y) ## sum(y) / length(y) ## Same thing
+```
+
+Notice: The unit of the mean is the same as the unit of the data, here
+grams.
+
+### Measures of spread
+
+There are many different measures of spread. The most common measure of
+spread is the sample standard deviation.
+
+```{=tex}
+\begin{align} 
+s = \sqrt{\frac{1}{n-1} \sum_{i=1}^n (y_i-\bar y)^2}   
+\end{align}
+```
+(For technical / historical) reasons we divide by $n-1$ rather than $n$.
+
+Notice: The unit of the standard deviation is the same as the unit of
+the data, here grams.
+
+```{r }
+sd(y) ## var(y) ## The variance
+```
+
+The sample variance is \begin{align} 
+s^2 = \frac{1}{n-1} \sum_{i=1}^n (y_i-\bar y)^2   
+\end{align}
+
+### Interpretation - midpoint of data and the 4sd-rule
+
+A practical interpretation of $\bar y$ and $s$ is as follows:
+
+Suppose data is nearly symmetrical mound shaped. Then the sample mean
+$\bar y$ is close to the midpoint of the sorted data vector which is the
+median.
+
+```{r}
+sort(y)
+median(y)
+mean(y)
+```
+
+Moreover, about $95\%$ of the observations are is within two standard
+deviations of the mean. If we say that $95\%$ of the observations are
+\`\`practically all observation'' then practically all observations fall
+in this interval
+
+Hence the largest minus the smallest value is roughly 4 standard
+deviations (we call this the "4sd-rule")
+
+```{r }
+(max(y) - min(y)) / 4
+sd(y)
+```
+
+## Standardizing variables - z-scores, feature scaling
+
+The z-score is given by
+
+```{=tex}
+\begin{align}
+z_i = \frac{y_i - \bar y}{s}
+\end{align}
+```
+Notice: The z-score is a dimensionless quantity: Numerator and
+denominator are both in grams. The z-score has mean zero and standard
+deviation one.
+
+```{r }
+z <- (y - mean(y)) / sd(y)
+z |> head()
+mean(z)
+sd(z)
+```
+
+Suppose we change the unit from grams to kilograms. Then mean and
+standard deviation also changes unit.
+
+```{r }
+y2 <- y / 1000 ## kilograms
+mean(y)
+mean(y2)
+sd(y)
+sd(y2)
+```
+
+However, the z-score is unaffected by change in scale and location:
+
+```{r}
+z <- (y - mean(y)) / sd(y); 
+z |> head()
+z2 <- (y2 - mean(y2)) / sd(y2)
+z2 |> head()
+```
+
+Hence: mean and standard deviation depends on the scale on which the
+variables are measured but z-scores do not.
+
+## Covariance and correlation
+
+Next we include the length of potatoes. This leads to the notion of
+covariance and correlation.
+
+```{r }
+x <- doBy::potatoes$length ## millimeters
+x2 <- x / 10 ## centimeters
+```
+
+Hence we now write $s_x$ and $s_y$ to distinguish the standard
+deviations etc.
+
+Cleary these measurements \`\`co--vary''
+
+```{r fig=T}
+## plot(x, y) ## Old style
+ggplot(dat, aes(x=length, y=weight)) + 
+  geom_point() + labs(x = "length(x)", y = "weight (y)")
+```
+
+A measure of how they co--vary is the (sample) covariance between $x$
+and $y$ \begin{align}
+s_{xy} = \frac{1}{n-1}\sum_{i=1}^n (x_i- \bar x)(y_i-\bar y) 
+\end{align}
+
+Notice: The unit of the covariance is the product of the units of the
+data, here millimeters times grams. This is not very interpretable, and
+the covariance will change if units are changed.
+
+Notice: If we replace $y_i$ by $x_i$ and $\bar y$ by $\bar x$ above then
+we get the sample covariance between $x$ and $x$ which is the (sample)
+variance of $x$.
+
+Closely related to the covariance is the correlation coefficient:
+\begin{align}
+  \rho_{xy}=\frac{s_{xy}}{s_x s_y}
+\end{align}
+
+Notice: The correlation coefficient is a dimensionless quantity. In both
+numerator and denominator we have a product of a millimeter and a gram.
+
+The correlation is always in the interval $\pm 1$. If the correlation is
+$-1$ or $1$ there is a perfect linear (negative/positive) association
+between $x$ and $y$. If the correlation is $0$ there is no linear
+association at all.
+
+```{r }
+cov(x, y)
+cov(x2, y2)
+```
+
+Another view of a correlation is that it is the covariance between the
+standardized variables $z_x$ and $z_y$ and hence the correlation is
+unaffected by change in scale and location:
+
+```{r}
+z_y <- (y-mean(y))/sd(y)
+z_x <- (x-mean(x))/sd(x)
+cov(z_x, z_y)
+cor(x, y)
+```
+
+## Transformation of data - more generally **(optional)**
+
+Take four numbers, $a$, $b$, $c$ and $d$ and create new variables $u_i$
+and $v_i$ as \begin{align}
+ u_i = a + b x_i, \quad v_i = c + d y_i
+\end{align} This corresponds to changing the scale and location of the
+data.
+
+Then for the new variables we have \begin{align}
+ \bar u = a + b\bar x, \quad s_u = b s_x,
+ \quad   s_{uv} = b d s_{xy}
+\end{align}
+
+But \begin{align}
+ z_u = z_x; \quad z_v=z_y; \quad \rho_{uv}=\rho_{xy}
+\end{align}
+
+Hence: mean, variance, standard deviation and covariance depends on the
+scale on which the variables are measured but z-scores and correlation
+does not.
+
+## Computations
+
+```{r}
+cov(dat)
+cor(dat)
+
+dat2 <- dat |> scale() 
+dat2 |> head()
+dat2 |> cov()
+```
+
+## When the Unit of Measurement Matter and do Not Matter **(optional)**
+
+### When the Unit of Measurement Doesn't Matter
+
+In statistical analysis, the scale or unit of measurement can sometimes
+be crucial, and in other cases, it might not matter. Here's a detailed
+explanation to clarify these differences:
+
+**Linear Regression Models**: - The coefficients of a linear regression
+model reflect the change in the dependent variable for a one-unit change
+in the predictor variable, holding all other variables constant. While
+the interpretation of coefficients changes with the scale of
+measurement, the underlying model and the conclusions derived from it
+remain valid regardless of whether measurements are in Celsius or
+Fahrenheit, liters or gallons, etc. - However, the numerical values of
+the coefficients will change if the units change, but the fit of the
+model and the predictions will be consistent. This property makes it
+possible to compare models or understand relationships without worrying
+about the units.
+
+### When the Unit of Measurement Does Matter
+
+**Statistical Methods Sensitive to Scale**: - In some analyses, the
+absolute scale of the variables matters. For example, in methods like
+Principal Component Analysis (PCA) or clustering, the scale can
+significantly impact the results because these methods rely on distances
+or variances which are directly influenced by the measurement units.
+
+**Standardization**: - To address the issue of scale, standardization is
+often used. Standardization involves rescaling the data so that each
+variable has a mean of 0 and a standard deviation of 1. This process,
+often done by computing Z-scores, helps in making variables comparable.
+Standardizing ensures that variables contribute equally to the analysis,
+preventing variables with larger scales from dominating the results.
+
+### Examples of Analyses Requiring Standardization
+
+1.  **Principal Component Analysis (PCA)**:
+    -   PCA is used for dimensionality reduction. If variables are not
+        standardized, those with larger scales can disproportionately
+        influence the principal components, leading to biased results.
+2.  **Cluster Analysis**:
+    -   In clustering algorithms (e.g., K-means), the distance between
+        data points is a crucial aspect. Variables with larger scales
+        can dominate the distance metrics, skewing the clustering
+        results.
+3.  **Multivariate Regression Models**:
+    -   In multivariate regression, having predictors on different
+        scales can affect the stability and interpretation of the
+        coefficients. Standardizing the predictors can help in comparing
+        the relative importance of each predictor.
+
+### Summary
+
+-   **Unit-Invariant Analyses**: Linear regression models (though
+    interpretation of coefficients depends on units).
+-   **Scale-Sensitive Analyses**: PCA, clustering, and multivariate
+    regression models.
+-   **Solution for Scale Sensitivity**: Standardization of variables to
+    have mean 0 and standard deviation 1.
+
+# A digression: More on programming in R
+
+Consider income data from doBy package:
+
+```{r}
+dat <- doBy::income
+dat |> head()
+```
+
+We want to standardize the numerical variables to have mean 0 and
+standard deviation 1.
+
+First we create a function that standardizes a vector:
+
+```{r}
+standardize <- function(x) {
+  (x - mean(x)) / sd(x)
+}
+z <- 1:10
+standardize(z)
+## quiz: When does this function fail?
+```
+
+We can make it more safe to use by adding a check:
+
+```{r}
+standardize <- function(x) {
+  if (is.numeric(x) && length(x) > 1) {
+    (x - mean(x)) / sd(x)
+  } else {
+    stop("Input must be a numeric vector of length > 1")
+  }
+}
+```
+
+There is room for improvement. If all elements of the vector are the
+same, the standard deviation is zero, and we get a division by zero
+error. We can add a check for this:
+
+```{r}
+standardize <- function(x) {
+  if (is.numeric(x) && length(x) > 1) {
+    if (sd(x) == 0) {
+      stop("Standard deviation is zero")
+    } else {
+      (x - mean(x)) / sd(x)
+    }
+  } else {
+    stop("Input must be a numeric vector of length > 1")
+  }
+}
+```
+
+We can now use this function to standardize the income data:
+
+```{r}
+dat <- doBy::income
+dat_std <- dat 
+for (j in 1:ncol(dat_std)) {
+  if (is.numeric(dat_std[[j]])) {
+    dat_std[[j]] <- standardize(dat_std[[j]])
+  }
+}
+dat |> head()
+dat_std |> head()
+```
+
+Let us wrap this into a function:
+
+```{r}
+standardize_data <- function(dat) {
+  dat_std <- dat 
+  for (j in 1:ncol(dat_std)) {
+    if (is.numeric(dat_std[[j]])) {
+      dat_std[[j]] <- standardize(dat_std[[j]])
+    }
+  }
+  return(dat_std)
+}
+
+dat2 <- standardize_data(dat)
+dat |> head()
+dat2 |> head()
+```
+
+Alternative implementation (remember that a dataframe is a list)
+
+```{r}
+out <- lapply(dat, 
+       function(x) {
+         if (is.numeric(x)) standardize(x) else x
+       })
+
+lapply(out, head)
+
+## or with a pipe
+out <- dat |> lapply(function(x) {
+         if (is.numeric(x)) standardize(x) else x
+       })
+
+```
+
+```{r}
+standardize_data <- function(dat) {
+  dat |> mutate(across(where(is.numeric), standardize) )
+}
+standardize_data(dat)
+```
+
+## Programming exercise
+
+1.  Inpired by the work above, create a function, write a function that
+    converts income in USD to DKK (exchange rate: 1 USD = 7 DKK), and
+    converts years of education to months of education.
+    
+```{r}
+
+  for (j in 1:ncol(dat))
+     convertedToDKK[[j]] <- dat[[j]]*7
+
+     
+'''convertedToDKK <- function(dat) {
+  dat_temp <- dat 
+  for (j in 1:ncol(dat_std)) {
+     dat_temp[[j]] <- dat_temp[[j]]*7
+    
+  }
+  return(dat_std)
+}'''
+View(convertedToDKK(dat))
+```
+
+
+2.  What is the correlation between income and years of education before
+    and after the transformation?
+
+3.  Fit a linear regression model to predict income from years of
+    education before and after the transformation. Compare the
+    coefficients.

@@ -197,11 +197,23 @@ Modify the use of `list.files()` to make a vector of filenames for every country
 ```{r}
 fls <- list.files(here::here("Data"), pattern = "*.txt", all.files = FALSE, full.names = FALSE, recursive = FALSE, ignore.case = FALSE, include.dirs = FALSE, no.. = FALSE)
 
-data_list <- lapply(fls, )
+## data_list <- lapply(fls, )
+## flsMtxt <- gsub("\\.txt$", "", fls)
 
-allCountries <- function(fls){
+data_list <- lapply(fls, function(file) {
+  read_delim(here::here("Data", file), delim = "\t", col_types = cols(year = col_integer(),
+                pop = col_integer(),
+                pop.m = col_integer(),
+                pop.f = col_integer(),
+                dens = col_double(),
+  ))  # Specify the columns and delimiter
+})
+
+View(data_list)
+
+allCountries <- bind_rows(data_list)
   
-}
+View(allCountries)
 
 ```
 

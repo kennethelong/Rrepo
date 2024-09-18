@@ -1,0 +1,80 @@
+---
+title: "Clustering iris data"
+output: 
+  html_document:
+    toc: true
+    number_sections: true
+    keep_rmd: true
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE} 
+is_sol = FALSE
+knitr::opts_chunk$set(message=FALSE)
+```
+
+
+# Iris  data
+
+```{r}
+head(iris)
+```
+The `iris` data is a classical dataset that comes with R. Read the documentation of the dataset. The dataset contains features of 50 sample of each of three varieties of the iris flower. 
+
+In this case we know the variety (that is the cluster), and the task is to investigate how well clustering performs in identifying these varieties.
+
+Make pairwise plots of all variables. Make sure that the varieties are shown in different colours. Based on such plots, how well do you anticipate the clustering algorithm to work?
+
+```{r}
+library(GGally)
+
+GGally::ggpairs(iris, aes(color = Species, alpha = 0.5)) + 
+  theme_minimal()
+
+## your code
+```
+
+
+Define dataset with the numerical values only:
+```{r}
+ir <- iris[,1:4]
+
+ head(ir)
+```
+
+Run a clustering algorithm on this dataset. Should data be scaled before doing the clustering?
+
+```{r, eval=F}
+ir2 <- scale(ir)
+dvec <- dist(ir2, method = "euclidian")
+hc <- hclust(dvec)
+plot(hc)
+rect.hclust(hc, k = 3, border = 2:5)
+```
+
+
+Extract 10 clusters and make a cross tabulation of the clusters and the species in the `iris` dataset. Here, `table()` is a good friend.
+
+```{r, eval=F}
+clusters <- c(10)
+cl <- cutree(hc, k=clusters)
+table(cl, iris$Species)
+```
+
+
+
+Experiment with extracting 2, 3 and 4 clusters from data and cross tabulate these the species. Based on this, how well do will you say that clustering works for these data? Are you surprised?
+
+
+Create scatterplots where you label points according to  the case `k=3`:
+
+
+
+
+
+<!-- This file has been generated automatically from clustering_itvest_24_ex.rmd -->
+
+<!-- time: 2024-09-20 07:07:22.852225 do not edit manually -->
+

@@ -1,0 +1,102 @@
+---
+title: "Penguin data wrangling"
+format: html
+---
+
+## Introduction
+
+The aim of this exercise is to practice your data-wrangling skills using the penguins dataset.
+You should be able to solve the exercise after studying the introduction to data wrangling on Moodle (both document and video) and occasionally you may need to confront the help file for a given function.
+(You also need your previous knowledge about `ggplot` to produce the relevant graphs.)
+
+You are asked to use the exercise qmd file (this file) as a starting point and modify it to answer all parts of the exercise.
+The file should "work out of the box" in the sense that once you have downloaded the file and opened it in RStudio you can press "Knit" (Ctrl+Shift+K) and a rendered html document should pop-up.
+Several R code chunks later on needs to be modified by you to work correctly and they have been disabled by setting the chunk option `eval: false`.
+Once you start working on the exercise you can press the "play button" (Ctrl+Shift+Enter inside the chunk) chunk by chunk as you progress.
+Once a given chunk is working correctly you can delete or change the option `eval: false` and press "Knit" (Ctrl+Shift+K) to see that the entire document is still rendering correctly.
+
+We start by loading the `tidyverse` package:
+```{r}
+library(tidyverse)
+```
+
+Then we save the data with a shorter name (this requires that you have the package
+`palmerpenguins` installed, so please do so if you haven't already done it by now):
+```{r}
+pengu <- palmerpenguins::penguins
+```
+
+## Exercises
+
+This command makes a new dataset `big_flipper_female` of female penguins with a flipper length above a certain threshold:
+```{r}
+big_flipper_female <- pengu |> 
+  filter(sex == "female" & flipper_length_mm>200)
+```
+
+### Exercise 1
+
+Make a new data set `male_2007` consisting of male penguins observed in 2007 and print out the first rows of the data by extending the command below:
+```{r}
+male_2007 <- pengu |> 
+  filter()
+male_2007
+```
+
+### Exercise 2
+
+What was the mean body mass of male penguins for each island in 2007? (Fill in the missing parts of the commands below and *remember* to change the chunk option so it is evaluated when you knit the document.)
+```{r}
+#| eval: false
+male_2007 |>
+  group_by() |> 
+  summarise()
+```
+
+### Exercise 3
+
+What was the mean body mass of male penguins for each island in 2009?
+(Insert a new chunk of R code (Ctrl+Shift+K) with the relevant code)
+
+### Exercise 4
+
+Make a dataset `Adelie_small` only containing the mass and sex of `Adelie` penguins disregarding all other columns.
+(Hint: Use both `select()` and `filter()`)
+```{r}
+Adelie_small <- pengu |> 
+  filter() |> 
+  select()
+```
+
+### Exercise 5
+
+Arrange the data from the previous exercise (4) such that the penguins with lowest mass are at the top of the table? (Hint: Insert a new code chunk and use `arrange()`)
+
+### Exercise 6
+
+Some penguins have the same body mass. Use arrange in the same way as in the previous exercise (5), but such that ties are broken by also arranging after bill length and bill depth.
+(Hint: Insert a new code chunk and provide several arguments in `arrange()`)
+
+### Exercise 7
+
+Extend the `pengu` dataset such that it contains an extra column called `body_mass_kg`
+containing the penguin mass measured in kg and call the resulting dataset `pengu2`.
+(Hint: Insert a new chunk and use `mutate()`.)
+
+### Exercise 8
+
+Make a scatter plot (`geom_point()`) showing the perfect linear relationship between
+the penguin mass in grams (on horizontal axis) and kilograms (on vertical axis). 
+(*Remember* to change the chunk option when you have modified the code below to 
+work correctly)
+```{r}
+#| eval: false
+pengu2 |> 
+  ggplot(aes()) +
+  geom_point()
+```
+
+### Exercise 9
+
+How many male `Adelie` penguins have a body mass above 4 kg on each island?
+(Hint: Insert a code chunk and use `filter()`, and `count()` (or ``group_by()` and `summarise(n = n())`)).
