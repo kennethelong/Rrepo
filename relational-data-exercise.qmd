@@ -40,6 +40,11 @@ View(carrier_avg_delay)
 
 For each carrier, what's the number of flights that don't have matching records in `planes`?
 
+```{r}
+
+```
+
+
 Show results together with carrier code and name as before
 
 *Hint:* We need three different tables and two different joins (have a look at `anti_join()` for the first part).
