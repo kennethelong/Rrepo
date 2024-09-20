@@ -1,0 +1,51 @@
+---
+title: "Reshaping mpg data"
+format: html
+---
+
+## Introduction
+
+The aim of this exercise is to practice your data-wrangling skills using the mpg dataset.
+You should be able to solve the exercise after studying the "further data wrangling" material on Moodle and occasionally you may need to confront the help file for a given function.
+(You also need your previous knowledge about `ggplot` to produce the relevant graphs.)
+
+You are asked to use the exercise qmd file (this file) as a starting point and modify it to answer all parts of the exercise.
+The file should "work out of the box" in the sense that once you have downloaded the file and opened it in RStudio you can press "Knit" (Ctrl+Shift+K) and a rendered html document should pop-up.
+Several R code chunks later on needs to be modified by you to work correctly and they have been disabled by setting the chunk option `eval=FALSE`.
+Once you start working on the exercise you can press the "play button" (Ctrl+Shift+Enter inside the chunk) chunk by chunk as you progress.
+Once a given chunk is working correctly you can delete or change the option `eval=FALSE` and press "Knit" (Ctrl+Shift+K) to see that the entire document is still rendering correctly.
+
+We start by loading the `tidyverse` package:
+```{r}
+library(tidyverse)
+```
+
+## Exercises
+
+### Exercise 1
+
+Modify the code below to reshape the `mpg` data such that it has two new columns 
+named `efficiency` and  `type` where the former should contain the fuel 
+efficiency numbers originally given in `cty` and `hwy` and the latter indicates 
+whether the driving type is city or highway (remember to enable chunk evaluation).
+
+```{r eval=FALSE}
+mpg_long <- mpg |> 
+  pivot_longer(c(`cty`, `hwy`), names_to = "type", values_to = "efficiency")
+mpg_long
+```
+
+### Exercise 2
+
+Make a plot that illustrates how fuel efficiency depends on engine size (`displ`) 
+where city and highway efficiency is show with different colours in the same graph. 
+The figure should include both a point layer (`geom_point()`) showing the actual 
+data and a smooth line (`geom_smooth()`) showing the general tendency of the 
+relationship (remember to enable chunk evaluation).
+
+```{r eval=FALSE}
+mpg_long |> 
+  ggplot(aes(x = displ, y = efficiency)) +
+  geom_point(alpha = .1) +
+  geom_smooth()
+```

@@ -200,6 +200,16 @@ fls <- list.files(here::here("Data"), pattern = "*.txt", all.files = FALSE, full
 ## data_list <- lapply(fls, )
 ## flsMtxt <- gsub("\\.txt$", "", fls)
 
+
+
+
+
+```
+
+Modify the command below to use `lapply` with your own function and the `fls` vector of filenames to make a list of data sets (`tibble`s) (remember to turn on chunk evaluation):
+
+```{r}
+#| eval: false
 data_list <- lapply(fls, function(file) {
   read_delim(here::here("Data", file), delim = "\t", col_types = cols(year = col_integer(),
                 pop = col_integer(),
@@ -210,23 +220,13 @@ data_list <- lapply(fls, function(file) {
 })
 
 View(data_list)
-
-allCountries <- bind_rows(data_list)
-  
-View(allCountries)
-
-```
-
-Modify the command below to use `lapply` with your own function and the `fls` vector of filenames to make a list of data sets (`tibble`s) (remember to turn on chunk evaluation):
-
-```{r}
-#| eval: false
-data_list <- lapply()
 ```
 
 Modify the command to use `bind_rows()` to combine the results to a single data set (`tibble`):
 ```{r}
-popstat2 <- bind_rows()
+popstat2 <- bind_rows(data_list)
+  
+View(popstat2)
 ```
 
 ### Exercise 2.3: Modifying the country name

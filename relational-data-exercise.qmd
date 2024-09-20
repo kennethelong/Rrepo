@@ -1,0 +1,53 @@
+---
+title: "Relational data and database exercises"
+format: html
+---
+
+## Load packages and data
+
+```{r tidy-setup, message = FALSE}
+library(tidyverse)
+library(nycflights13)
+```
+
+## Exercise 1: Average arrival delay for each carrier
+
+What is the average arrival delay on flights for each carrier?
+
+Show the results together with both carrier code and carrier name
+
+(*Hint:* Use an inner join of `flights` and `airlines` and appropriate `group_by()` and `summarise()`.)
+
+```{r}
+flights2 <- flights |> 
+  select(month, day, hour, origin, dest, tailnum, carrier)
+
+flights2 |>   left_join(airports, by = c("dest" = "faa"))
+
+
+##flightsAvgArr <- flights |> left_join(airlines, by = "carrier")
+
+flights_airlines <- inner_join(flights, airlines)
+carrier_avg_delay <- flights_airlines |>
+  group_by(carrier, name) |>
+  summarise(avg_arr_delay = mean(arr_delay, na.rm = TRUE))
+View(carrier_avg_delay)
+
+```
+
+
+## Exercise 2: Flights without records in `planes`
+
+For each carrier, what's the number of flights that don't have matching records in `planes`?
+
+Show results together with carrier code and name as before
+
+*Hint:* We need three different tables and two different joins (have a look at `anti_join()` for the first part).
+
+## Exercise 3: Number of flights by carrier and destination
+
+What is the number of flights for each carrier and destination?
+
+Show the name of both the carrier and airport, not the id codes, and sorted by airline and airport for clarity.
+
+*Hint:* We need to join three different tables and notice that two tables have a variable `name` with different meanings so they will appear with two different suffixes (you can rename them if you like).
