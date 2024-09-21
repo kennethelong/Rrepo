@@ -22,7 +22,7 @@ Show the results together with both carrier code and carrier name
 flights2 <- flights |> 
   select(month, day, hour, origin, dest, tailnum, carrier)
 
-flights2 |>   left_join(airports, by = c("dest" = "faa"))
+##flights2 |> left_join(airports, by = c("dest" = "faa"))
 
 
 ##flightsAvgArr <- flights |> left_join(airlines, by = "carrier")
@@ -41,6 +41,26 @@ View(carrier_avg_delay)
 For each carrier, what's the number of flights that don't have matching records in `planes`?
 
 ```{r}
+##no_record = anti_join(flights, planes) 
+##no_record_w_carrier = inner_join(no_record, airlines)
+##no_record_w_carrier_clean <- no_record_w_carrier |> 
+##  select(tailnum, carrier, name, year, month, day, hour, flight)
+
+##no_record_w_carrier <- flights |> anti_join(planes, by = "tailnum") |> inner_join(airlines, by = "carrier")
+
+##no_record_w_carrier_clean <- flights |> anti_join(planes, by = "tailnum") |> 
+  ##inner_join(airlines, by = "carrier") |>
+  #select(tailnum, carrier, name, year, month, day, hour, flight)
+
+##no_record_count <- no_record_w_carrier_clean |>
+  ##group_by(carrier, name) |>
+  ##summarise(count = n())
+
+no_record_count <- flights |> anti_join(planes, by = "tailnum") |> 
+  inner_join(airlines, by = "carrier") |>
+  select(tailnum, carrier, name, year, month, day, hour, flight) |>
+  group_by(carrier, name) |>
+  summarise(count = n())
 
 ```
 
@@ -56,3 +76,22 @@ What is the number of flights for each carrier and destination?
 Show the name of both the carrier and airport, not the id codes, and sorted by airline and airport for clarity.
 
 *Hint:* We need to join three different tables and notice that two tables have a variable `name` with different meanings so they will appear with two different suffixes (you can rename them if you like).
+
+```{r}
+testTable <- flights |> inner_join(airports, by = c("dest" = "faa"))
+
+airlines_renamed <- airlines |>
+  rename(airlines_name = name)
+airports_renamed <- airports |>
+  rename(airports_name = name)
+
+newTable <- flights |> 
+  inner_join(airlines_renamed, by = "carrier")  |>
+  inner_join(airports_renamed, by = c("dest" = "faa")) |>
+  select(carrier, origin, airports_name, airlines_name, dest) |>
+  group_by(airlines_name, airports_name) |>
+  summarise(count = n())
+print(newTable)
+
+```
+
