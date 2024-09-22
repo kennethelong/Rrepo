@@ -3,7 +3,8 @@ v1 <- c(1, -5, 3, -7, 12, -9)
 v2 <- c(30, 50, 10)
 
 # Exercise A.1
-v1 + 10
+v1P10 <- v1 + 10
+cat("result of v1 + 10: ", v1P10, "\n")
 
 # Exercise A.2
 v1 * 10

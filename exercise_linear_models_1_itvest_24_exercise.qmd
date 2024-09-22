@@ -1,0 +1,35 @@
+---
+title: "Exercise - some linear models"
+author: "Søren Højsgaard"
+format: html
+editor: visual
+---
+
+We will use the `palmerpenguins` data set. It is a data set with information on penguins. We will use the `body_mass_g` as the response variable and `species`, `island`, `sex`, `culmen_length_mm`, `culmen_depth_mm`, `flipper_length_mm`, and `year` as explanatory variables.
+
+```{r}
+dat <- palmerpenguins::penguins
+dat <- dat[complete.cases(dat),]
+head(dat)
+```
+
+We ask the following question:
+
+1.  How well can we predict the body mass of a penguin based on species and flipper length?
+
+2.  Are predictions improved by including other variables?
+
+We encourage you to take as much inspiration from the lecture slides/notes as you feel like :)
+
+```{r}
+library(ggplot2) 
+library(broom)
+```
+
+```{r}
+## YOUR CODE GOES HERE...
+```
+
+```{r}
+## AND HERE...
+```
