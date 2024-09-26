@@ -20,6 +20,7 @@ Most of the exercises below show a preview of the result that you are supposed t
 ## Libraries required to execute this file
 library(tidyverse)
 library(dplyr)
+library(rvest) # For web scraping
 ```
 
 ## **Exercise 1**
@@ -38,31 +39,76 @@ country  code  `1960` `1961` `1962` `1963` `1964` `1965` `1966` `1967` `1968`   
 ```
 
 ```{r}
+## Using here to locate preset location
 here::here()
-filename <- "Data/world_population.csv"
 
+## filename <- "Data/world_population.csv"
+
+## Reading the csv file world_population.csv into world_population
 world_population <- read_csv("Data/world_population.csv", col_names = TRUE, col_types = NULL , skip = 3)
+
+## Removing column 3 and 4, 48-50 and setting population values as numeric
+world_population <- world_population[, c(1:47)]
+world_population <- world_population[, -c(3,4)]
+world_population <- world_population |>
+  mutate(across(3:45, as.numeric))
 
 View(world_population)
 
-final_world_population <- world_population[, -c(3,4)]
-year_columns <- names(final_world_population)[3:length(final_world_population)]
-final_world_population <- final_world_population |> 
-  mutate(across(all_of(year_columns), as.character))
+final_world_population <- world_population
 
+## Moving row one up as headers and removing the row
+wpop_full <- final_world_population |> 
+  setNames(as.character(unlist(final_world_population[1, ]))) |>  slice(-1)
 
-final_world_population[1, ] <- as.list(as.character(final_world_population[1, ]))
+head(wpop_full)
 
-View(final_world_population)
+View(wpop_full)
 
 
 ```
 
-You can add options to executable code like this
+## **Exercise 2**
+
+Use the package `rvest` to read in the list of country codes from the main table at <https://en.wikipedia.org/wiki/ISO_3166-1> and select/deselect and rename columns so you end up with a tibble (`tbl`) named `iso_codes_all` with 249 rows and 3 columns with names as shown in the output below.
 
 ```{r}
-#| echo: false
-2 * 2
+wiki_jump <- 'https://en.wikipedia.org/wiki/ISO_3166-1'
+
+
+##Gets the tables from the url
+long_jump <- read_html(wiki_jump)
+tbl <- long_jump |>
+  html_elements("table") |> # use html_elements() for all tables
+  html_table()
+tbl |> head()
+## The table we need pertaining country name, iso 3 and independence  is the second table
+tbl2 <- tbl[[2]]
+## removing columns that are not required, iso 2, numeric value and link
+tbl2 <- tbl2[, -c(2,4,5)]
+
+## Renaming the column headers
+iso_codes_all <- tbl2 |> rename(name = 1) |> rename(iso3 = 2) |> rename(independent = 3)
+
+head(iso_codes_all)
+
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+## **Exercise 3**
+
+Use `filter()` to extract the independent countries from `iso_codes_all` and save the result as `iso_codes`.
+
+```         
+iso_codes
+```
+
+```         
+# A tibble: 194 × 3    name                iso3  independent    <chr>               <chr> <chr>        1 Afghanistan[b]      AFG   Yes          2 Albania             ALB   Yes          3 Algeria             DZA   Yes          4 Andorra             AND   Yes          5 Angola              AGO   Yes          6 Antigua and Barbuda ATG   Yes          7 Argentina           ARG   Yes          8 Armenia             ARM   Yes          9 Australia           AUS   Yes         10 Austria             AUT   Yes         # ℹ 184 more rows
+```
+
+```{r}
+## Filtering on value "Yes" in column "independent"
+iso_codes <- iso_codes_all |> filter(independent == "Yes")
+
+head(iso_codes)
+```
