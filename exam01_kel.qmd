@@ -21,6 +21,8 @@ Most of the exercises below show a preview of the result that you are supposed t
 library(tidyverse)
 library(dplyr)
 library(rvest) # For web scraping
+library(printr)
+library(ggplot2)
 ```
 
 ## **Exercise 1**
@@ -44,11 +46,13 @@ here::here()
 
 ## filename <- "Data/world_population.csv"
 
+## ----- ## THERE IS SOMETHING THAT MAY NOT WORK ENTIRELY CORRECTLY ## ----- ##
+
 ## Reading the csv file world_population.csv into world_population
 world_population <- read_csv("Data/world_population.csv", col_names = TRUE, col_types = NULL , skip = 3)
 
 ## Removing column 3 and 4, 48-50 and setting population values as numeric
-world_population <- world_population[, c(1:47)]
+world_population <- world_population[, c(1:67)]
 world_population <- world_population[, -c(3,4)]
 world_population <- world_population |>
   mutate(across(3:45, as.numeric))
@@ -126,7 +130,184 @@ wpop
 ```
 
 ```{r}
+
+## Inner joining the two tables to get one table with only those countries that have a matching iso code
 wpop <- wpop_full |> inner_join(iso_codes_all, by = c("Country Code" = "iso3") )
 
+head(wpop)
 View(wpop)
+```
+
+## **Exercise 5**
+
+Show the countries/areas which have the same ISO country code in both `wpop` and `iso_codes` but different (spellings of) country names.
+
+```         
+# A tibble: 28 × 3    name                              code  country                  <chr>                             <chr> <chr>                  1 Afghanistan[b]                    AFG   Afghanistan            2 Bahamas                           BHS   Bahamas, The           3 Bolivia, Plurinational State of   BOL   Bolivia                4 China[b]                          CHN   China                  5 Côte d'Ivoire                     CIV   Cote d'Ivoire          6 Congo, Democratic Republic of the COD   Congo, Dem. Rep.       7 Congo                             COG   Congo, Rep.            8 Cyprus[b]                         CYP   Cyprus                 9 Egypt                             EGY   Egypt, Arab Rep.      10 Micronesia, Federated States of   FSM   Micronesia, Fed. Sts. # ℹ 18 more rows
+```
+
+```{r}
+
+## Making a local version of the iso table and selecting only "Country Name", "Country Code" and "name"
+ex5_wpop <- wpop[, c(1, 2,66)]
+
+## Filtering where "Country Name" is different from "name", i.e. where the name of the country is different
+ex5_wpop <- ex5_wpop |> filter(`Country Name` != name)
+
+head(ex5_wpop)
+View(ex5_wpop)
+
+```
+
+## **Exercise 6**
+
+Use the package `rvest` to read in the list of countries with corresponding continent codes from the main table at <https://en.wikipedia.org/wiki/List_of_sovereign_states_and_dependent_territories_by_continent_(data_file)> and select/deselect and rename columns so you end up with a tibble (`tbl`) named `continents` with 253 rows and 2 columns with names as shown in the output below.
+
+**Important hint:** you need `convert = FALSE` in `html_table()` to avoid the text string `"NA"` (North America) to be interpreted as missing data (Not Available).
+
+```         
+continents
+```
+
+```         
+# A tibble: 253 × 2    continent iso3     <chr>     <chr>  1 AS        AFG    2 EU        ALB    3 AN        ATA    4 AF        DZA    5 OC        ASM    6 EU        AND    7 AF        AGO    8 NA        ATG    9 AS        AZE   10 SA        ARG   # ℹ 243 more rows
+```
+
+```{r}
+ex6_wiki_jump <- 'https://en.wikipedia.org/wiki/List_of_sovereign_states_and_dependent_territories_by_continent_(data_file)'
+
+
+##Gets the tables from the url
+ex6_long_jump <- read_html(ex6_wiki_jump)
+ex6_tbl <- ex6_long_jump |>
+  html_elements("table") |> # use html_elements() for all tables
+  html_table(convert = FALSE)
+ex6_tbl |> head()
+## The table we need pertaining country name and other information is the third (3) table
+ex6_tbl2 <- ex6_tbl[[3]]
+## removing columns that are not required, iso 2, numeric value and link
+ex6_tbl2 <- ex6_tbl2[, -c(2,4,5)]
+
+## Renaming the column headers
+continents <- ex6_tbl2 |> rename(continent = 1) |> rename(iso3 = 2)
+
+head(continents)
+```
+
+## **Exercise 7**
+
+Make a new dataset `wpop2` by extending `wpop` with the extra column `continent` from the `continents` data (possibly using `relocate()` to move the `continent` column to the left to see it more clearly).
+
+```         
+wpop2
+```
+
+```         
+# A tibble: 193 × 66    continent country      code  `1960` `1961` `1962` `1963` `1964` `1965` `1966`    <chr>     <chr>        <chr>  <dbl>  <dbl>  <dbl>  <dbl>  <dbl>  <dbl>  <dbl>  1 AS        Afghanistan  AFG   8.62e6 8.79e6 8.97e6 9.16e6 9.36e6 9.57e6 9.78e6  2 AF        Angola       AGO   5.36e6 5.44e6 5.52e6 5.60e6 5.67e6 5.74e6 5.79e6  3 EU        Albania      ALB   1.61e6 1.66e6 1.71e6 1.76e6 1.81e6 1.86e6 1.91e6  4 EU        Andorra      AND   9.44e3 1.02e4 1.10e4 1.18e4 1.27e4 1.36e4 1.45e4  5 AS        United Arab… ARE   1.33e5 1.41e5 1.49e5 1.57e5 1.65e5 1.74e5 1.83e5  6 SA        Argentina    ARG   2.03e7 2.07e7 2.10e7 2.14e7 2.17e7 2.21e7 2.24e7  7 AS        Armenia      ARM   1.90e6 1.97e6 2.04e6 2.11e6 2.17e6 2.23e6 2.30e6  8 NA        Antigua and… ATG   5.53e4 5.62e4 5.70e4 5.78e4 5.87e4 5.96e4 6.06e4  9 OC        Australia    AUS   1.03e7 1.05e7 1.07e7 1.10e7 1.12e7 1.14e7 1.17e7 10 EU        Austria      AUT   7.05e6 7.09e6 7.13e6 7.18e6 7.22e6 7.27e6 7.32e6 # ℹ 183 more rows # ℹ 56 more variables: `1967` <dbl>, `1968` <dbl>, `1969` <dbl>, `1970` <dbl>, #   `1971` <dbl>, `1972` <dbl>, `1973` <dbl>, `1974` <dbl>, `1975` <dbl>, #   `1976` <dbl>, `1977` <dbl>, `1978` <dbl>, `1979` <dbl>, `1980` <dbl>, #   `1981` <dbl>, `1982` <dbl>, `1983` <dbl>, `1984` <dbl>, `1985` <dbl>, #   `1986` <dbl>, `1987` <dbl>, `1988` <dbl>, `1989` <dbl>, `1990` <dbl>, #   `1991` <dbl>, `1992` <dbl>, `1993` <dbl>, `1994` <dbl>, `1995` <dbl>, …
+```
+
+```{r}
+## Making a copy of wpop and continents for exercise 7
+ex7_wpop <- wpop
+ex7_continents <- continents
+
+## joining wpop and continents
+wpop2 <- ex7_wpop |> inner_join(ex7_continents, by = c("Country Code" = "iso3") )
+
+## Moving the column with continents (48) to the first column
+wpop2 <- wpop2 |> relocate(68, .before = 1)
+
+head(wpop2)
+```
+
+## **Exercise 8**
+
+Use `pivot_longer()` to reshape `wpop2` into “long format” with columns as shown below (in particular make sure `year` is a numeric variable) and call the resulting tibble `pop_long`.
+
+```         
+pop_long
+```
+
+```         
+# A tibble: 12,159 × 5    continent country     code   year      pop    <chr>     <chr>       <chr> <dbl>    <dbl>  1 AS        Afghanistan AFG    1960  8622466  2 AS        Afghanistan AFG    1961  8790140  3 AS        Afghanistan AFG    1962  8969047  4 AS        Afghanistan AFG    1963  9157465  5 AS        Afghanistan AFG    1964  9355514  6 AS        Afghanistan AFG    1965  9565147  7 AS        Afghanistan AFG    1966  9783147  8 AS        Afghanistan AFG    1967 10010030  9 AS        Afghanistan AFG    1968 10247780 10 AS        Afghanistan AFG    1969 10494489 # ℹ 12,149 more rows
+```
+
+```{r}
+## Making a local copy
+ex8_wpop <- wpop2
+
+## Using the pivot_longer to make the data set in long format, where columns 1960-2022 is now in a column named year with population in the next column
+pop_long <- ex8_wpop |> pivot_longer(cols = '1960':'2022', names_to = "year", values_to = "Population" )
+
+## Removes unused columns
+pop_long <- pop_long[, c(-4, -5)]
+
+## Making year into doubles
+pop_long <- pop_long |> mutate(year = as.numeric(year))
+
+head(pop_long)
+View(pop_long)
+
+```
+
+## **Exercise 9**
+
+Make a line plot showing the population over all the years in the data with one line per country with semi-transparent lines.
+
+```{r}
+## Using the long list, removing two columns
+ex9_wpop <- pop_long[, -c(1, 3)]
+
+## Building a ggplot graph NOT DONE
+ggplot(data = ex9_wpop, mapping = aes(year, Population, group = 'Country Name')) + 
+  geom_point()+ theme_minimal() +
+  ##geom_smooth() +
+  geom_line(alpha = 0.1)
+
+ex9_wpop_final <- ex9_wpop <- ggplot(ex9_wpop, aes(x = year, y = pop, group = 'Country Name')) +
+  geom_line(alpha = .1) +
+  labs(x = "Year", y = "Population")
+
+ggplot(data = ex9_wpop, mapping = aes(x = year, y = Population, group = 'Country Name')) +
+  geom_line(alpha = .1)
+##+   labs(x = "Year", y = "Population")
+
+ex9_wpop_final
+
+ex11_pl_pop <- ggplot(pop_index, aes(x = year, y = pop, group = country)) +
+  geom_line(alpha = .1) +
+  labs(x = "Year", y = "Population")
+
+print(ex11_pl_pop)
+
+```
+
+## **Exercise 10**
+
+Use the code below to rescale each country’s population size to an population index which in 1 for every country in 1960. An index value of e.g. 2 would mean that the population size of that country has doubled since 1960.
+
+```{r}
+ex10_pop_long <- pop_long |> rename(country = 2) |> rename(code = 3) |> rename(pop = 5)
+pop_index <- ex10_pop_long |> 
+  group_by('Country Name',continents, 'Country Code') |> 
+  mutate(pop_index = Population/Population[1])
+
+pop_index <- ex10_pop_long |> 
+  group_by(country,continents,code) |> 
+  mutate(pop_index = pop/pop[1])
+
+```
+
+## **Exercise 11**
+
+Make a line plot showing the indexed population numbers over all the years in the data with one line per country with semi-transparent lines.
+
+```{r}
+
+ex11_pl_pop <- ggplot(pop_index, aes(x = year, y = pop_index, group = country)) +
+  geom_line(alpha = .1) +
+  labs(x = "Year", y = "Population")
+
+print(ex11_pl_pop)
+
 ```
