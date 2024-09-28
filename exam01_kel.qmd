@@ -311,3 +311,38 @@ ex11_pl_pop <- ggplot(pop_index, aes(x = year, y = pop_index, group = country)) 
 print(ex11_pl_pop)
 
 ```
+
+## **Exercise 12**
+
+Identify the two countries with extreme population indices and make a new line plot showing the indexed population numbers over all the years in the data with one line per country with semi-transparent lines **without these two countries**.
+
+```{r}
+
+## ex12_pl_pop <- pop_index |> filter(country != 'Qatar')
+
+ex12_pl_pop <- pop_index |> filter(!country %in% c('Qatar', 'United Arab Emirates')) 
+
+ex12_final <- ggplot(ex12_pl_pop, aes(x = year, y = pop_index, group = country)) +
+  geom_line(alpha = .1) +
+  labs(x = "Year", y = "Population")
+
+print(ex12_final)
+
+```
+
+## **Exercise 13**
+
+Run the following command and describe in a few words what the result `growth_long` is
+
+```{r}
+ex13_pop_long <- pop_long |> rename(continent = 1) |> rename(country = 2) |> rename(code = 3) |> rename(pop = 5)
+
+## Firstly it groups the countries, continents and code
+## The original table had a year and a population for that year (year 1960, pop = 1.000 and year 1961, pop = 1.019). Now, using the reframe command, it is converted in to population start (1.000), which is the population previoulsy noted for that year (1960) and a population end (1.019) which is the population for the next year (1961). Growth is calculated to be the change in the population from year 1 (1960) to year 2 (1961). The result is that for year 1961 pop start was 1.000 and pop end was 1.019, growth being 100*(1019-1000)/1000 = 1,9
+growth_long <- ex13_pop_long |> 
+  group_by(country,continent,code) |> 
+  reframe(pop_start = pop[1:(length(pop)-1)], 
+          pop_end = pop[2:length(pop)], 
+          growth = 100*(pop_end-pop_start)/pop_start, 
+          end_year = year[2:length(year)])
+```
