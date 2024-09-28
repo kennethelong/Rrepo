@@ -112,3 +112,21 @@ iso_codes <- iso_codes_all |> filter(independent == "Yes")
 
 head(iso_codes)
 ```
+
+## **Exercise 4**
+
+Use a suitable join (and/or filter) command to make a dataset `wpop` only containing those rows of `wpop_full` which have a matching ISO country code in `iso_codes`:
+
+```         
+wpop
+```
+
+```         
+# A tibble: 193 × 65    country  code  `1960` `1961` `1962` `1963` `1964` `1965` `1966` `1967` `1968`    <chr>    <chr>  <dbl>  <dbl>  <dbl>  <dbl>  <dbl>  <dbl>  <dbl>  <dbl>  <dbl>  1 Afghani… AFG   8.62e6 8.79e6 8.97e6 9.16e6 9.36e6 9.57e6 9.78e6 1.00e7 1.02e7  2 Angola   AGO   5.36e6 5.44e6 5.52e6 5.60e6 5.67e6 5.74e6 5.79e6 5.83e6 5.87e6  3 Albania  ALB   1.61e6 1.66e6 1.71e6 1.76e6 1.81e6 1.86e6 1.91e6 1.97e6 2.02e6  4 Andorra  AND   9.44e3 1.02e4 1.10e4 1.18e4 1.27e4 1.36e4 1.45e4 1.57e4 1.71e4  5 United … ARE   1.33e5 1.41e5 1.49e5 1.57e5 1.65e5 1.74e5 1.83e5 1.91e5 2.14e5  6 Argenti… ARG   2.03e7 2.07e7 2.10e7 2.14e7 2.17e7 2.21e7 2.24e7 2.28e7 2.31e7  7 Armenia  ARM   1.90e6 1.97e6 2.04e6 2.11e6 2.17e6 2.23e6 2.30e6 2.36e6 2.42e6  8 Antigua… ATG   5.53e4 5.62e4 5.70e4 5.78e4 5.87e4 5.96e4 6.06e4 6.16e4 6.27e4  9 Austral… AUS   1.03e7 1.05e7 1.07e7 1.10e7 1.12e7 1.14e7 1.17e7 1.18e7 1.20e7 10 Austria  AUT   7.05e6 7.09e6 7.13e6 7.18e6 7.22e6 7.27e6 7.32e6 7.38e6 7.42e6 # ℹ 183 more rows # ℹ 54 more variables: `1969` <dbl>, `1970` <dbl>, `1971` <dbl>, `1972` <dbl>, #   `1973` <dbl>, `1974` <dbl>, `1975` <dbl>, `1976` <dbl>, `1977` <dbl>, #   `1978` <dbl>, `1979` <dbl>, `1980` <dbl>, `1981` <dbl>, `1982` <dbl>, #   `1983` <dbl>, `1984` <dbl>, `1985` <dbl>, `1986` <dbl>, `1987` <dbl>, #   `1988` <dbl>, `1989` <dbl>, `1990` <dbl>, `1991` <dbl>, `1992` <dbl>, #   `1993` <dbl>, `1994` <dbl>, `1995` <dbl>, `1996` <dbl>, `1997` <dbl>, …
+```
+
+```{r}
+wpop <- wpop_full |> inner_join(iso_codes_all, by = c("Country Code" = "iso3") )
+
+View(wpop)
+```
