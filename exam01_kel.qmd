@@ -353,12 +353,30 @@ growth_long <- ex13_pop_long |>
 Make a line plot showing the population over all the years in the data with one line per country with semi-transparent lines
 
 ```{r}
-
+## Using the growth_long data set having end-year on and growth on y
 ex14_final <- ggplot(growth_long, aes(x = end_year, y = growth, group = country)) +
   geom_line(alpha = .1) +
   labs(x = "Year", y = "Year-to-year population growth in pct.")
 
 print(ex14_final)
 
+
+```
+
+## **Exercise 15**
+
+Make a similar graphic as above but with one panel/facet per continent.
+
+```{r}
+## Building a ggplot with end_year on x and growth on y (similar to ex 11) but this time having them in a graph per continent
+ex15_final <- ggplot(growth_long, aes(x = end_year, y = growth, group = country)) + 
+  geom_line(alpha = .1) + 
+  labs(x = "Year", y = "Year-to-year population growth in pct.") 
+
+## This is the command to show them according to continent
+ex15_final + facet_wrap(~continent)
+  
+
+print(ex15_final)
 
 ```
