@@ -335,6 +335,7 @@ print(ex12_final)
 Run the following command and describe in a few words what the result `growth_long` is
 
 ```{r}
+## Making sure the headers are correct for the standard code
 ex13_pop_long <- pop_long |> rename(continent = 1) |> rename(country = 2) |> rename(code = 3) |> rename(pop = 5)
 
 ## Firstly it groups the countries, continents and code
@@ -345,4 +346,19 @@ growth_long <- ex13_pop_long |>
           pop_end = pop[2:length(pop)], 
           growth = 100*(pop_end-pop_start)/pop_start, 
           end_year = year[2:length(year)])
+```
+
+## **Exercise 14**
+
+Make a line plot showing the population over all the years in the data with one line per country with semi-transparent lines
+
+```{r}
+
+ex14_final <- ggplot(growth_long, aes(x = end_year, y = growth, group = country)) +
+  geom_line(alpha = .1) +
+  labs(x = "Year", y = "Year-to-year population growth in pct.")
+
+print(ex14_final)
+
+
 ```
