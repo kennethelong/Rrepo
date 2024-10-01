@@ -421,6 +421,49 @@ bottom10
 ```
 
 ```{r}
-## arranges the growth_range by max_growth then removes all rows after the first 10
+## arranges the growth_range by min_growth then removes all rows after the first 10
 bottom10 <- growth_range |> arrange(min_growth) |> slice_head(n = 10)
+```
+
+## **Exercise 19**
+
+Make a line plot showing the population over all the years in the data with different colours for each country represented in `top10`.
+
+```{r}
+## Making a copy of top10
+ex19_top10 <- top10
+
+## joining top10 with growth_long by country, where the countries exist in both tables and only selecting country, growth and end_year
+ex19_top10_final <- inner_join(ex19_top10, growth_long, by = 'country') |> select(country, growth, end_year)
+
+## Making the ggplot
+ex19_top10_final_plot <- ex19_top10_final |> ggplot(aes(x = end_year, y = growth, colour = country)) +
+  geom_line(alpha = 4) +
+  labs(x = "end_year", y = "growth") ## The labels on the x and y axis
+
+## Showing the plot
+print(ex19_top10_final_plot)
+
+
+
+```
+
+## **Exercise 20**
+
+Use `pivot_wider()` to reshape `growth_long` to wide format with one column per year and call the result `growth`.
+
+```         
+growth
+```
+
+```{r}
+
+## Making a local copy and removing pop_start and pop_end
+ex20_wpop <- growth_long[, c(-4, -5)]
+
+## Using the pivot_wider to make the data set in wide format, where end_year is moved up as a header and the growth and the values
+growth <- ex20_wpop |> pivot_wider(names_from = end_year, values_from = growth) |> group_by(country)
+
+head(pop_long)
+View(pop_long)
 ```
