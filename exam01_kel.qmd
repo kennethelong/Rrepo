@@ -288,9 +288,9 @@ Use the code below to rescale each country’s population size to an population 
 
 ```{r}
 ex10_pop_long <- pop_long |> rename(country = 2) |> rename(code = 3) |> rename(pop = 5)
-pop_index <- ex10_pop_long |> 
-  group_by('Country Name',continents, 'Country Code') |> 
-  mutate(pop_index = Population/Population[1])
+##pop_index <- ex10_pop_long |> 
+##  group_by('Country Name',continent, 'Country Code') |> 
+##  mutate(pop_index = pop/pop[1])
 
 pop_index <- ex10_pop_long |> 
   group_by(country,continents,code) |> 
@@ -464,6 +464,33 @@ ex20_wpop <- growth_long[, c(-4, -5)]
 ## Using the pivot_wider to make the data set in wide format, where end_year is moved up as a header and the growth and the values
 growth <- ex20_wpop |> pivot_wider(names_from = end_year, values_from = growth) |> group_by(country)
 
-head(pop_long)
-View(pop_long)
+head(growth)
+```
+
+## **Exercise 21**
+
+Make a hierarchical clustering of the growth data in 9 groups. The following hints can be used to achieve this:
+
+1.  Remove non-numerical columns from data
+
+2.  Calculate distances
+
+3.  Use `hclust()` to run the clustering algorithm.
+
+4.  Use `cutree()` to make the cluster labels.
+
+5.  Use mutate to add the cluster label as a variable to `growth`
+
+```{r}
+## Making a local version
+ex21_growth <- growth[, -c(1, 2, 3)]
+ex21_growth_sacled <- scale(ex21_growth)
+ex21_growth_dvec <- dist(ex21_growth_sacled, method = "euclidean")
+ex21_growth_hc <- hclust(ex21_growth_dvec)
+plot(ex21_growth_hc)
+rect.hclust(ex21_growth_hc, k = 9, border = 2:5)
+
+head(ex21_growth)
+
+
 ```
