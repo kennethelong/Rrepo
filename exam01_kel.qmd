@@ -484,11 +484,24 @@ Make a hierarchical clustering of the growth data in 9 groups. The following hin
 ```{r}
 ## Making a local version
 ex21_growth <- growth[, -c(1, 2, 3)]
+View(ex21_growth)
 ex21_growth_sacled <- scale(ex21_growth)
 ex21_growth_dvec <- dist(ex21_growth_sacled, method = "euclidean")
 ex21_growth_hc <- hclust(ex21_growth_dvec)
 plot(ex21_growth_hc)
+View(ex21_growth_hc)
 rect.hclust(ex21_growth_hc, k = 9, border = 2:5)
+plot(ex21_growth_hc)
+View(ex21_growth_hc)
+
+clusters <- c(9)
+cl <- cutree(ex21_growth_hc, k=clusters) |> as.data.frame()
+cl |> head(5)
+
+names(cl) <- paste0("Cluster_", clusters)
+head(cl)
+View(cl)
+table(cl, iris$Species)
 
 head(ex21_growth)
 
