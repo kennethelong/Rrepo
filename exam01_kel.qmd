@@ -380,3 +380,47 @@ ex15_final + facet_wrap(~continent)
 print(ex15_final)
 
 ```
+
+## **Exercise 16**
+
+For each country find both the largest positive and the smallest (most negative) growth over the years in the data so you end up with a tibble (`tbl`) named `growth_range` with 193 rows and 3 columns with names as shown in the output below. *hint: `group_by()` and `summarise()` are your friends.*
+
+```         
+growth_range
+```
+
+```         
+# A tibble: 193 × 3    country             max_growth min_growth    <chr>                    <dbl>      <dbl>  1 Afghanistan              16.1     -10.7    2 Albania                   3.17     -1.21   3 Algeria                   4.93      1.36   4 Andorra                   8.47     -3.16   5 Angola                    3.83      0.698  6 Antigua and Barbuda       2.05     -0.577  7 Argentina                 1.72      0.256  8 Armenia                   3.54     -3.28   9 Australia                 3.44      0.141 10 Austria                   1.13     -0.265 # ℹ 183 more rows
+```
+
+```{r}
+## selecing only country and growth from growth_long. Grouping them by country and finding the max and min value for each coutry
+growth_range <- growth_long |> select(country, growth) |> group_by(country) |> summarise(max_growth = max(growth), min_growth = min(growth))
+
+```
+
+## **Exercise 17**
+
+Find the 10 countries which have experienced the largest growth percentage of all at some point over the years in the data.
+
+```         
+top10
+```
+
+```{r}
+## arranges the growth_range by max_growth then removes all rows after the first 10
+top10 <- growth_range |> arrange(desc(max_growth)) |> slice_head(n = 10)
+```
+
+## **Exercise 18**
+
+Find the 10 countries which have experienced the most negative growth percentage of all at some point over the years in the data.
+
+```         
+bottom10
+```
+
+```{r}
+## arranges the growth_range by max_growth then removes all rows after the first 10
+bottom10 <- growth_range |> arrange(min_growth) |> slice_head(n = 10)
+```
