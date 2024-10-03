@@ -1,0 +1,113 @@
+---
+title: "pca_pcr"
+format: html
+editor: visual
+---
+
+## Example: Crime rate in the US in 1977
+
+The crime_rate data contains the crime rate per 100.000 people in 50 US states in 1977:
+
+```{r}
+library(dplyr)
+library(tidyverse)
+crime <- doBy::crime_rate
+state <- rownames(crime)
+crime_state <- cbind(crime, state=state)
+rownames(crime_state) <- NULL
+
+crime |> head(3)
+
+crime_state |> head(3)
+
+```
+
+## Summarizing multivariate data
+
+Plotting multivariate data:
+
+```{r}
+## Two handy utilities:
+make_long <- function(data., x){
+  data. |>
+    as.data.frame() |>
+    pivot_longer(-!!sym(x), names_to = "type", values_to = "value")
+}
+
+do_plot1 <- function(data.){
+  data. |>
+    ggplot(aes(x=fct_inorder(type), y=value, group=state, color=state)) +
+    geom_point() + geom_line() + theme(legend.position="none")
+}
+
+## Uncentered data
+dat_long <- crime_state |> make_long("state")
+## Centered but unscaled data
+dat_c <- crime_state |> doBy::scale_df(center=T, scale=F)
+dat_c_long <- dat_c |> make_long("state")
+## Centered and scaled data
+dat_cs <- crime_state |> doBy::scale_df(center=T, scale=T)
+dat_cs_long <- dat_cs |> make_long("state")
+
+p1 <- do_plot1(dat_long)
+p2 <- do_plot1(dat_c_long)
+p3 <- do_plot1(dat_cs_long)
+cowplot::plot_grid(p1, p2, p3)
+
+
+```
+
+## Summarizing multivariate data
+
+Plotting multivariate data:
+
+```{r}
+cormat <- cor(crime)
+round(10*cormat)
+
+doBy::truncate0(cormat, tol=0.6)
+
+```
+
+```{r}
+library(GGally)
+crime |>
+ggpairs(lower = list(continuous = "smooth"),
+progress=FALSE)
+
+```
+
+```{r}
+library(corrplot)
+corrplot::corrplot(cormat, method="color")
+
+```
+
+## 4 Principal component analysis (PCA)
+
+4.1 Basic idea
+
+Easy to explain with only three variables
+
+```{r}
+violent <- crime[,1:3]
+violent |> head(3)
+
+```
+
+```{r}
+violent |> cor()
+```
+
+```{r}
+library(plotly)
+crime <- doBy::crime_rate
+violent <- crime[,1:3]
+violent |> head()
+plot_ly(violent, x=~murder, y=~rape, z=~assault)
+pc <- prcomp(violent)
+violent_rec <- doBy::recover_pca_data(pc, 1)
+violent2 <- rbind(violent, violent_rec)
+plot_ly(violent2, x=~murder, y=~rape, z=~assault,
+color=c(rep('green', 50), rep('blue', 50)))
+```
