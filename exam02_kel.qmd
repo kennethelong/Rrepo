@@ -1,0 +1,13 @@
+**Data science exam: part 2**
+
+Author
+
+\[names\]
+
+# **Part II - 1: Regression**
+
+## **Data**
+
+This part uses the `personality` dataset from the R package `doBy` with recordings of 32 variables describing personality characteristics for 240 people. (see help file for `?personality`)
+
+We focus on the variable `easygon` as the response variable. We split the data in training and test data as follows:

@@ -1,0 +1,67 @@
+---
+title: "APITest"
+format: html
+editor: visual
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+```{r}
+library(tidyverse)
+library(jsonlite)
+
+url <- "https://api.energidataservice.dk/dataset/CO2Emis?start=2022-01-01T00:00&end=2022-01-01T01:00&limit=4"
+
+d <- fromJSON(url)
+str(d)
+d_record <- d$records |> as_tibble()
+d_record
+
+```
+
+You can add options to executable code like this
+
+```{r}
+library(httr)
+
+url <- "https://api.tomorrow.io/v4"
+
+queryString <- list(apikey = "JO2zMztpoTw2wZ5idQgJCsJWnihlItSw")
+
+response <- VERB("GET", url, query = queryString, content_type("application/octet-stream"))
+
+content(response, "text")
+
+library(httr)
+
+# Define API endpoint and API key
+url <- "https://api.tomorrow.io/v4/timelines"
+
+# Your Tomorrow.io API Key
+api_key <- "JO2zMztpoTw2wZ5idQgJCsJWnihlItSw"  # Replace with your actual API key
+
+fields <- paste("solarGHI", "solarDNI", "solarDHI", sep = ",")
+
+# Query parameters
+query_params <- list(
+  location = "Herlev, Denmark",  # Can also use latitude and longitude
+  fields = fields,  # Fields related to solar radiation
+  units = "metric",  # Use metric system
+  timesteps = "1h",  # Data in hourly intervals
+  startTime = Sys.Date() + 1,  # Get data for tomorrow
+  endTime = Sys.Date() + 1,  # Same day (tomorrow) data
+  apikey = api_key  # Your API key
+)
+
+# Make the API request
+response <- GET(url, query = query_params)
+
+# Parse the response content
+sun_data <- content(response, "parsed")
+
+# Print the response (for debugging or viewing the structure)
+print(sun_data)
+
+```

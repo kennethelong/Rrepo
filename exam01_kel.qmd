@@ -293,7 +293,7 @@ ex10_pop_long <- pop_long |> rename(country = 2) |> rename(code = 3) |> rename(p
 ##  mutate(pop_index = pop/pop[1])
 
 pop_index <- ex10_pop_long |> 
-  group_by(country,continents,code) |> 
+  group_by(country,continent,code) |> 
   mutate(pop_index = pop/pop[1])
 
 ```
@@ -410,6 +410,8 @@ top10
 ```{r}
 ## arranges the growth_range by max_growth then removes all rows after the first 10
 top10 <- growth_range |> arrange(desc(max_growth)) |> slice_head(n = 10)
+
+print(top10)
 ```
 
 ## **Exercise 18**
@@ -423,6 +425,8 @@ bottom10
 ```{r}
 ## arranges the growth_range by min_growth then removes all rows after the first 10
 bottom10 <- growth_range |> arrange(min_growth) |> slice_head(n = 10)
+
+print(bottom10)
 ```
 
 ## **Exercise 19**
@@ -485,8 +489,10 @@ Make a hierarchical clustering of the growth data in 9 groups. The following hin
 ## Making a local version
 ex21_growth <- growth[, -c(1, 2, 3)]
 View(ex21_growth)
-ex21_growth_sacled <- scale(ex21_growth)
-ex21_growth_dvec <- dist(ex21_growth_sacled, method = "euclidean")
+## ex21_growth_sacled <- scale(ex21_growth)
+## ex21_growth_dvec <- dist(ex21_growth_sacled, method = "euclidean")
+ex21_growth_dvec <- dist(ex21_growth, method = "euclidean")
+ex21_growth_dvec_as_matrix <- as.matrix(ex21_growth_dvec)[1:4, 1:4]
 ex21_growth_hc <- hclust(ex21_growth_dvec)
 plot(ex21_growth_hc)
 View(ex21_growth_hc)
@@ -507,3 +513,29 @@ head(ex21_growth)
 
 
 ```
+
+## **Exercise 22**
+
+Use `group_split()` and `lapply()` similarly to below to extract the countries of each cluster and display them nicely with `pander::pander()`:
+
+```         
+growth_clust |>    group_split(clust) |>    lapply(function(x) x$country) |>    pander::pander()
+```
+
+-   Afghanistan
+
+-   *Albania*, *Antigua and Barbuda*, *Argentina*, *Armenia*, *Australia*, *Austria*, *Azerbaijan*, *Barbados*, *Belarus*, *Belgium*, *Bosnia and Herzegovina*, *Bulgaria*, *Cabo Verde*, *Canada*, *Chile*, *China*, *Croatia*, *Cuba*, *Cyprus*, *Czechia*, *Denmark*, *Dominica*, *El Salvador*, *Estonia*, *Fiji*, *Finland*, *France*, *Georgia*, *Germany*, *Greece*, *Grenada*, *Guyana*, *Hungary*, *Iceland*, *Ireland*, *Italy*, *Jamaica*, *Japan*, *Kazakhstan*, *Korea, Dem. People’s Rep.*, *Korea, Rep.*, *Latvia*, *Liechtenstein*, *Lithuania*, *Luxembourg*, *Malta*, *Mauritius*, *Moldova*, *Monaco*, *Montenegro*, *Myanmar*, *Nauru*, *Netherlands*, *New Zealand*, *North Macedonia*, *Norway*, *Palau*, *Poland*, *Portugal*, *Romania*, *Russian Federation*, *Samoa*, *San Marino*, *Serbia*, *Slovak Republic*, *Slovenia*, *Spain*, *Sri Lanka*, *St. Kitts and Nevis*, *St. Lucia*, *St. Vincent and the Grenadines*, *Suriname*, *Sweden*, *Switzerland*, *Thailand*, *Tonga*, *Trinidad and Tobago*, *Ukraine*, *United Kingdom*, *United States* and *Uruguay*
+
+-   *Algeria*, *Angola*, *Bahamas, The*, *Bahrain*, *Bangladesh*, *Belize*, *Benin*, *Bhutan*, *Bolivia*, *Botswana*, *Brazil*, *Brunei Darussalam*, *Burkina Faso*, *Burundi*, *Cambodia*, *Cameroon*, *Central African Republic*, *Chad*, *Colombia*, *Comoros*, *Congo, Dem. Rep.*, *Congo, Rep.*, *Costa Rica*, *Cote d’Ivoire*, *Dominican Republic*, *Ecuador*, *Egypt, Arab Rep.*, *Equatorial Guinea*, *Eritrea*, *Eswatini*, *Ethiopia*, *Gabon*, *Gambia, The*, *Ghana*, *Guatemala*, *Guinea*, *Guinea-Bissau*, *Haiti*, *Honduras*, *India*, *Indonesia*, *Iran, Islamic Rep.*, *Iraq*, *Israel*, *Kenya*, *Kiribati*, *Kyrgyz Republic*, *Lao PDR*, *Lesotho*, *Liberia*, *Libya*, *Madagascar*, *Malawi*, *Malaysia*, *Maldives*, *Mali*, *Mauritania*, *Mexico*, *Micronesia, Fed. Sts.*, *Mongolia*, *Morocco*, *Mozambique*, *Namibia*, *Nepal*, *Nicaragua*, *Niger*, *Nigeria*, *Pakistan*, *Panama*, *Papua New Guinea*, *Paraguay*, *Peru*, *Philippines*, *Sao Tome and Principe*, *Saudi Arabia*, *Senegal*, *Sierra Leone*, *Singapore*, *Solomon Islands*, *Somalia*, *South Africa*, *South Sudan*, *Sudan*, *Syrian Arab Republic*, *Tajikistan*, *Tanzania*, *Timor-Leste*, *Togo*, *Tunisia*, *Turkiye*, *Turkmenistan*, *Tuvalu*, *Uganda*, *Uzbekistan*, *Vanuatu*, *Venezuela, RB*, *Viet Nam*, *Yemen, Rep.*, *Zambia* and *Zimbabwe*
+
+-   *Andorra*, *Djibouti*, *Jordan*, *Marshall Islands* and *Oman*
+
+-   Kuwait
+
+-   Lebanon
+
+-   *Qatar* and *United Arab Emirates*
+
+-   Rwanda
+
+-   Seychelles
