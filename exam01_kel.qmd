@@ -49,7 +49,7 @@ here::here()
 ## ----- ## THERE IS SOMETHING THAT MAY NOT WORK ENTIRELY CORRECTLY ## ----- ##
 
 ## Reading the csv file world_population.csv into world_population
-world_population <- read_csv("Data/world_population.csv", col_names = TRUE, col_types = NULL , skip = 3)
+world_population <- read_csv("world_population.csv", col_names = TRUE, col_types = NULL , skip = 3)
 
 ## Removing column 3 and 4, 48-50 and setting population values as numeric
 world_population <- world_population[, c(1:67)]
@@ -135,7 +135,7 @@ wpop
 wpop <- wpop_full |> inner_join(iso_codes, by = c("Country Code" = "iso3") )
 
 head(wpop)
-View(wpop)
+#View(wpop)
 ```
 
 ## **Exercise 5**
@@ -155,7 +155,7 @@ ex5_wpop <- wpop[, c(1, 2,66)]
 ex5_wpop <- ex5_wpop |> filter(`Country Name` != name)
 
 head(ex5_wpop)
-View(ex5_wpop)
+#View(ex5_wpop)
 
 ```
 
@@ -237,7 +237,7 @@ pop_long
 ex8_wpop <- wpop2
 
 ## Using the pivot_longer to make the data set in long format, where columns 1960-2022 is now in a column named year with population in the next column
-pop_long <- ex8_wpop |> pivot_longer(cols = '1960':'2022', names_to = "year", values_to = "Population" )
+pop_long <- ex8_wpop |> pivot_longer(cols = '1960':'2022', names_to = "year", values_to = "pop" )
 
 ## Removes unused columns
 pop_long <- pop_long[, c(-4, -5)]
@@ -246,7 +246,7 @@ pop_long <- pop_long[, c(-4, -5)]
 pop_long <- pop_long |> mutate(year = as.numeric(year))
 
 head(pop_long)
-View(pop_long)
+## View(pop_long)
 
 ```
 
@@ -258,27 +258,14 @@ Make a line plot showing the population over all the years in the data with one 
 ## Using the long list, removing two columns
 ex9_wpop <- pop_long[, -c(1, 3)]
 
-## Building a ggplot graph NOT DONE
-ggplot(data = ex9_wpop, mapping = aes(year, Population, group = 'Country Name')) + 
-  geom_point()+ theme_minimal() +
-  ##geom_smooth() +
-  geom_line(alpha = 0.1)
-
-ex9_wpop_final <- ex9_wpop <- ggplot(ex9_wpop, aes(x = year, y = pop, group = 'Country Name')) +
-  geom_line(alpha = .1) +
+## Building a ggplot graph
+ex9_wpop_final <- ggplot(ex9_wpop, aes(x = year, y = pop, group = 'Country Name')) + 
+  geom_line(alpha = 0.1)+
+  ## geom_point()+ 
   labs(x = "Year", y = "Population")
-
-ggplot(data = ex9_wpop, mapping = aes(x = year, y = Population, group = 'Country Name')) +
-  geom_line(alpha = .1)
-##+   labs(x = "Year", y = "Population")
 
 ex9_wpop_final
 
-ex11_pl_pop <- ggplot(pop_index, aes(x = year, y = pop, group = country)) +
-  geom_line(alpha = .1) +
-  labs(x = "Year", y = "Population")
-
-print(ex11_pl_pop)
 
 ```
 
@@ -377,7 +364,7 @@ ex15_final <- ggplot(growth_long, aes(x = end_year, y = growth, group = country)
 ex15_final + facet_wrap(~continent)
   
 
-print(ex15_final)
+#print(ex15_final)
 
 ```
 
@@ -488,11 +475,6 @@ Make a hierarchical clustering of the growth data in 9 groups. The following hin
 ```{r}
 ## Making a local version
 ex21_growth <- growth[, -c(1, 2, 3)]
-##View(ex21_growth)
-
-## No scaling needed
-## ex21_growth_sacled <- scale(ex21_growth)
-## ex21_growth_dvec <- dist(ex21_growth_sacled, method = "euclidean")
 
 ## Calculating distance
 ex21_growth_dvec <- dist(ex21_growth, method = "euclidean")
