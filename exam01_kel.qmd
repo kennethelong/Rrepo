@@ -517,7 +517,7 @@ rownames(cl) <- ex21_growth_hc$labels
 ## Combining the cluster output (cl) and the original "growth" dataframe
 growth_clust <- cl |> mutate(growth)
 
-
+## Making the clust column into a factor and not an int
 growth_clust$clust <- as.factor(growth_clust$clust)
 
 head(growth_clust)
@@ -532,20 +532,97 @@ Use `group_split()` and `lapply()` similarly to below to extract the countries o
 growth_clust |>    group_split(clust) |>    lapply(function(x) x$country) |>    pander::pander()
 ```
 
--   Afghanistan
+```{r}
+growth_clust |> 
+  group_split(clust) |> 
+  lapply(function(x) x$country) |> 
+  pander::pander()
+```
 
--   *Albania*, *Antigua and Barbuda*, *Argentina*, *Armenia*, *Australia*, *Austria*, *Azerbaijan*, *Barbados*, *Belarus*, *Belgium*, *Bosnia and Herzegovina*, *Bulgaria*, *Cabo Verde*, *Canada*, *Chile*, *China*, *Croatia*, *Cuba*, *Cyprus*, *Czechia*, *Denmark*, *Dominica*, *El Salvador*, *Estonia*, *Fiji*, *Finland*, *France*, *Georgia*, *Germany*, *Greece*, *Grenada*, *Guyana*, *Hungary*, *Iceland*, *Ireland*, *Italy*, *Jamaica*, *Japan*, *Kazakhstan*, *Korea, Dem. People’s Rep.*, *Korea, Rep.*, *Latvia*, *Liechtenstein*, *Lithuania*, *Luxembourg*, *Malta*, *Mauritius*, *Moldova*, *Monaco*, *Montenegro*, *Myanmar*, *Nauru*, *Netherlands*, *New Zealand*, *North Macedonia*, *Norway*, *Palau*, *Poland*, *Portugal*, *Romania*, *Russian Federation*, *Samoa*, *San Marino*, *Serbia*, *Slovak Republic*, *Slovenia*, *Spain*, *Sri Lanka*, *St. Kitts and Nevis*, *St. Lucia*, *St. Vincent and the Grenadines*, *Suriname*, *Sweden*, *Switzerland*, *Thailand*, *Tonga*, *Trinidad and Tobago*, *Ukraine*, *United Kingdom*, *United States* and *Uruguay*
+## **Exercise 23**
 
--   *Algeria*, *Angola*, *Bahamas, The*, *Bahrain*, *Bangladesh*, *Belize*, *Benin*, *Bhutan*, *Bolivia*, *Botswana*, *Brazil*, *Brunei Darussalam*, *Burkina Faso*, *Burundi*, *Cambodia*, *Cameroon*, *Central African Republic*, *Chad*, *Colombia*, *Comoros*, *Congo, Dem. Rep.*, *Congo, Rep.*, *Costa Rica*, *Cote d’Ivoire*, *Dominican Republic*, *Ecuador*, *Egypt, Arab Rep.*, *Equatorial Guinea*, *Eritrea*, *Eswatini*, *Ethiopia*, *Gabon*, *Gambia, The*, *Ghana*, *Guatemala*, *Guinea*, *Guinea-Bissau*, *Haiti*, *Honduras*, *India*, *Indonesia*, *Iran, Islamic Rep.*, *Iraq*, *Israel*, *Kenya*, *Kiribati*, *Kyrgyz Republic*, *Lao PDR*, *Lesotho*, *Liberia*, *Libya*, *Madagascar*, *Malawi*, *Malaysia*, *Maldives*, *Mali*, *Mauritania*, *Mexico*, *Micronesia, Fed. Sts.*, *Mongolia*, *Morocco*, *Mozambique*, *Namibia*, *Nepal*, *Nicaragua*, *Niger*, *Nigeria*, *Pakistan*, *Panama*, *Papua New Guinea*, *Paraguay*, *Peru*, *Philippines*, *Sao Tome and Principe*, *Saudi Arabia*, *Senegal*, *Sierra Leone*, *Singapore*, *Solomon Islands*, *Somalia*, *South Africa*, *South Sudan*, *Sudan*, *Syrian Arab Republic*, *Tajikistan*, *Tanzania*, *Timor-Leste*, *Togo*, *Tunisia*, *Turkiye*, *Turkmenistan*, *Tuvalu*, *Uganda*, *Uzbekistan*, *Vanuatu*, *Venezuela, RB*, *Viet Nam*, *Yemen, Rep.*, *Zambia* and *Zimbabwe*
+Use `pivot_longer()` to convert `growth_clust` to long format and plot growth as a function of time with a panel/facet for each cluster.
 
--   *Andorra*, *Djibouti*, *Jordan*, *Marshall Islands* and *Oman*
+```{r}
+## Using the pivot_longer to make the data set in long format, where columns 1961-2022 is now in a column named year with population growth in procent in the next column
+growth_clust_long <- growth_clust |> pivot_longer(cols = '1961':'2022', names_to = "year", values_to = "pop_growth_pct")
 
--   Kuwait
 
--   Lebanon
+## Removes unused columns
+growth_clust_long <- growth_clust_long[, c(-3, -4)]
 
--   *Qatar* and *United Arab Emirates*
+## making year into a nummeric value, so it can scale in sequence later on
+growth_clust_long$year <- as.numeric(growth_clust_long$year)
 
--   Rwanda
+head(growth_clust_long)
 
--   Seychelles
+## Making the plot with year on x and population growth on y, grouped by country. scale on x is set to the years from 1960 to 2022, with two decades spread and spread on y-axis from -25 to 25
+ex23_final <- ggplot(growth_clust_long, aes(x = year, y = pop_growth_pct, group = country))+ 
+  geom_line(alpha = 1)  + 
+  labs(title = "Growth in percent by clusters", x = "year", y = "Growth") + 
+  ## theme_minimal() +
+  scale_x_continuous(breaks = seq(1960, 2022, by = 20)) + 
+  scale_y_continuous(limits = c(-25, 25))
+
+ex23_final + facet_wrap(~clust, scales = "free")
+
+
+
+```
+
+## **Exercise**
+
+The code below can be used to calculate average growth rates over several years.
+
+```         
+agg_year <- 5 aggr_growth_long <- growth_long |>   mutate(period=((end_year - min(end_year)) %/% agg_year) * agg_year + min(end_year)) |>    group_by(period, code, country, continent) |> summarise(pop = mean(growth))
+```
+
+Use the clustering technique of the previous exercise to divide the data into different clusters. Experiment with several period lengths (aggregation years) and number of clusters and show results for at least one combination of `agg_year` and number of clusters. An example is given below.
+
+```{r}
+## Inserted code from exercise
+agg_year <- 5
+aggr_growth_long <- growth_long |>
+  mutate(period=((end_year - min(end_year)) %/% agg_year) * agg_year + min(end_year)) |> 
+  group_by(period, code, country, continent) |> summarise(pop = mean(growth))
+
+aggr_growth_long
+
+ex24_final <- ggplot(aggr_growth_long, aes(x = period, y = pop, group = country))+ 
+  geom_line(alpha = 0.1)  + 
+  labs(title = "x", x = "year", y = "Population") + 
+  ## theme_minimal() +
+  scale_x_continuous(breaks = seq(1960, 2022, by = 20)) + 
+  scale_y_continuous(limits = c(-10, 15))
+
+ex24_final
+```
+
+```{r}
+## Making a local version
+ex24_aggr_growth_long <- aggr_growth_long[, -c(2, 4)]
+
+## Calculating distance
+ex24_aggr_growth_long_dvec <- dist(ex24_aggr_growth_long, method = "euclidean")
+
+## Making the clustering
+ex24_aggr_growth_long_hc <- hclust(ex24_aggr_growth_long_dvec)
+
+## Using 9 clusters to organize
+clusters <- c(9)
+ex24_cl <- cutree(ex24_aggr_growth_long_hc, k=clusters) |> as.data.frame()
+ex24_cl |> head(5)
+
+## Changing the name of the cluster column to "clust"
+names(ex24_cl) <- paste0("clust")
+rownames(ex24_cl) <- ex24_aggr_growth_long_hc$labels
+
+## Combining the cluster output (ex24_cl) and the original "aggr_growth_long" dataframe
+ex24_growth_clust <- ex24_cl |> mutate(aggr_growth_long)
+
+## Making the clust column into a factor and not an int
+ex24_growth_clust$clust <- as.factor(ex24_growth_clust$clust)
+
+head(ex24_growth_clust)
+```
