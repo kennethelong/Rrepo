@@ -132,7 +132,7 @@ wpop
 ```{r}
 
 ## Inner joining the two tables to get one table with only those countries that have a matching iso code
-wpop <- wpop_full |> inner_join(iso_codes_all, by = c("Country Code" = "iso3") )
+wpop <- wpop_full |> inner_join(iso_codes, by = c("Country Code" = "iso3") )
 
 head(wpop)
 View(wpop)
@@ -488,29 +488,39 @@ Make a hierarchical clustering of the growth data in 9 groups. The following hin
 ```{r}
 ## Making a local version
 ex21_growth <- growth[, -c(1, 2, 3)]
-View(ex21_growth)
+##View(ex21_growth)
+
+## No scaling needed
 ## ex21_growth_sacled <- scale(ex21_growth)
 ## ex21_growth_dvec <- dist(ex21_growth_sacled, method = "euclidean")
-ex21_growth_dvec <- dist(ex21_growth, method = "euclidean")
-ex21_growth_dvec_as_matrix <- as.matrix(ex21_growth_dvec)[1:4, 1:4]
-ex21_growth_hc <- hclust(ex21_growth_dvec)
-plot(ex21_growth_hc)
-View(ex21_growth_hc)
-rect.hclust(ex21_growth_hc, k = 9, border = 2:5)
-plot(ex21_growth_hc)
-View(ex21_growth_hc)
 
+## Calculating distance
+ex21_growth_dvec <- dist(ex21_growth, method = "euclidean")
+
+## Making the clustering
+ex21_growth_hc <- hclust(ex21_growth_dvec)
+
+## No cluster diagram is required, but this code provides a diagram
+## rect.hclust(ex21_growth_hc, k = 9, border = 2:5)
+## plot(ex21_growth_hc)
+## View(ex21_growth_hc)
+
+## Using 9 clusters to organize
 clusters <- c(9)
 cl <- cutree(ex21_growth_hc, k=clusters) |> as.data.frame()
 cl |> head(5)
 
-names(cl) <- paste0("Cluster_", clusters)
-head(cl)
-View(cl)
-table(cl, iris$Species)
+## Changing the name of the cluster column to "clust"
+names(cl) <- paste0("clust")
+rownames(cl) <- ex21_growth_hc$labels
 
-head(ex21_growth)
+## Combining the cluster output (cl) and the original "growth" dataframe
+growth_clust <- cl |> mutate(growth)
 
+
+growth_clust$clust <- as.factor(growth_clust$clust)
+
+head(growth_clust)
 
 ```
 
