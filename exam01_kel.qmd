@@ -259,7 +259,7 @@ Make a line plot showing the population over all the years in the data with one 
 ex9_wpop <- pop_long[, -c(1, 3)]
 
 ## Building a ggplot graph
-ex9_wpop_final <- ggplot(ex9_wpop, aes(x = year, y = pop, group = 'Country Name')) + 
+ex9_wpop_final <- ggplot(ex9_wpop, aes(x = year, y = pop, group = `Country Name`)) + 
   geom_line(alpha = 0.1)+
   ## geom_point()+ 
   labs(x = "Year", y = "Population")
