@@ -592,8 +592,8 @@ ex24_aggr_growth_long_dvec <- dist(ex24_aggr_growth_long, method = "euclidean")
 ex24_aggr_growth_long_hc <- hclust(ex24_aggr_growth_long_dvec)
 
 ## Using 9 clusters to organize
-clusters <- c(9)
-ex24_cl <- cutree(ex24_aggr_growth_long_hc, k=clusters) |> as.data.frame()
+ex24_clusters <- c(9)
+ex24_cl <- cutree(ex24_aggr_growth_long_hc, k=ex24_clusters) |> as.data.frame()
 ex24_cl |> head(5)
 
 ## Changing the name of the cluster column to "clust"
@@ -601,10 +601,41 @@ names(ex24_cl) <- paste0("clust")
 rownames(ex24_cl) <- ex24_aggr_growth_long_hc$labels
 
 ## Combining the cluster output (ex24_cl) and the original "aggr_growth_long" dataframe
-ex24_growth_clust <- ex24_cl |> mutate(aggr_growth_long)
+ex24_growth_clust <- ex24_cl |> mutate(ex24_aggr_growth_long)
 
 ## Making the clust column into a factor and not an int
 ex24_growth_clust$clust <- as.factor(ex24_growth_clust$clust)
 
 head(ex24_growth_clust)
+```
+
+```{r}
+ex24_growth_clust |> 
+  group_split(clust) |> 
+  lapply(function(x) x$country) |> 
+  pander::pander()
+```
+
+```{r}
+## Using the pivot_longer to make the data set in long format, where columns 1961-2022 is now in a column named year with population growth in procent in the next column
+##ex24_growth_clust_long <- ex24_growth_clust |> pivot_longer(cols = '1961':'2022', names_to = "year", values_to = "pop_growth_pct")
+
+
+## Removes unused columns
+ex24_growth_clust_01 <- ex24_growth_clust[, c(-3, -5)]
+
+## making year into a nummeric value, so it can scale in sequence later on
+ex24_growth_clust_01$period <- as.numeric(ex24_growth_clust_01$period)
+
+head(ex24_growth_clust_01)
+
+## Making the plot with year on x and population growth on y, grouped by country. scale on x is set to the years from 1960 to 2022, with two decades spread and spread on y-axis from -25 to 25
+ex23_final <- ggplot(ex24_growth_clust_01, aes(x = period, y = pop, group = country))+ 
+  geom_line(alpha = 1)  + 
+  labs(title = "Diagram", x = "year", y = "pop") + 
+  ## theme_minimal() +
+  scale_x_continuous(breaks = seq(1960, 2022, by = 10)) + 
+  scale_y_continuous(limits = c(-10, 20))
+
+ex23_final + facet_wrap(~clust, scales = "free")
 ```
