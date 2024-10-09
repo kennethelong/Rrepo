@@ -7,11 +7,23 @@ editor: visual
 
 # **Data science exam: part 1**
 
-In this first exam exercise you will work with world population data from <https://data.worldbank.org/indicator/SP.POP.TOTL>
+**Introduction - Read Me**
 
-You should make a fresh Quarto document and solve the exercises given below. You are allowed to work in groups of at most three people. Please make sure to include all group members as authors of the Quarto file.
+This file contains the work of **Kenneth Elong**. It was submitted for review on the 10th of October.
 
-Most of the exercises below show a preview of the result that you are supposed to obtain. Of course you should aim at recreating these results, but don’t give up if you don’t get exactly the same. Just explain what you did and argue why you think it is meaningful.
+All exercises were solved by Kenneth Elong. No one else have provided any code for the solving of the exercises. I did however discuss possible solutions and errors I encountered witth a group of students also attending the course.
+
+The exercises were found in the file *exam1.html* in the *Eksamensprojekter* in <https://www.moodle.aau.dk/mod/folder/view.php?id=1812259>
+
+I have included the exercise description for each exercise for reference. In some cases the expected output is also included.
+
+This work can also be found on github at <https://github.com/kennethelong/Rrepo/blob/main/exam01_kel.qmd>
+
+I have not used, or commented it out, View(xx) and mostly relied on head(xx). I have often opted to show the first 10 lines, to give better overview of the result.
+
+Generally I have made a "local" copy of a the used df for each exercise. This is done in an effort to ensure a high degree of repeatability. Instead of e.g. using df "wpop" from a previous exercise and manipulating it, most often a local version is made e.g. ex2x_wpop \<- wpop. Thereby I do not have to rerun previous exercises to get a df that is required as input.
+
+To enhance readability steps are broken down and operations performed one at a time. Readability enhances durability of code, because as it may be a computer that executes the commands, it is always a human that will need to understand, change, and reuse the commands.
 
 ```{r}
 ## To execute this file the "here" package needs to be installed
@@ -41,34 +53,24 @@ country  code  `1960` `1961` `1962` `1963` `1964` `1965` `1966` `1967` `1968`   
 ```
 
 ```{r}
-## Using here to locate preset location
-here::here()
+## Reading the csv file world_population.csv into world_population_csv. The file is in the root folder, where this file is also found.
+world_population_csv <- read_csv("world_population.csv", col_names = TRUE, col_types = NULL , skip = 3)
 
-## filename <- "Data/world_population.csv"
-
-## ----- ## THERE IS SOMETHING THAT MAY NOT WORK ENTIRELY CORRECTLY ## ----- ##
-
-## Reading the csv file world_population.csv into world_population
-world_population <- read_csv("world_population.csv", col_names = TRUE, col_types = NULL , skip = 3)
-
-## Removing column 3 and 4, 48-50 and setting population values as numeric
-world_population <- world_population[, c(1:67)]
+## Removing column 3 and 4, 48-50, creating a world_population df, and setting population values as numeric. This could be done in one step rather than multiple
+world_population <- world_population_csv[, c(1:67)]
 world_population <- world_population[, -c(3,4)]
 world_population <- world_population |>
   mutate(across(3:45, as.numeric))
 
-View(world_population)
+## View(world_population)
 
 final_world_population <- world_population
 
 ## Moving row one up as headers and removing the row
-wpop_full <- final_world_population |> 
+wpop_full <- world_population |> 
   setNames(as.character(unlist(final_world_population[1, ]))) |>  slice(-1)
 
-head(wpop_full)
-
-View(wpop_full)
-
+head(wpop_full, 10)
 
 ```
 
@@ -77,6 +79,7 @@ View(wpop_full)
 Use the package `rvest` to read in the list of country codes from the main table at <https://en.wikipedia.org/wiki/ISO_3166-1> and select/deselect and rename columns so you end up with a tibble (`tbl`) named `iso_codes_all` with 249 rows and 3 columns with names as shown in the output below.
 
 ```{r}
+## Setting the url
 wiki_jump <- 'https://en.wikipedia.org/wiki/ISO_3166-1'
 
 
@@ -86,7 +89,7 @@ tbl <- long_jump |>
   html_elements("table") |> # use html_elements() for all tables
   html_table()
 tbl |> head()
-## The table we need pertaining country name, iso 3 and independence  is the second table
+## The table we need pertaining country name, iso 3, and independence  is the second table
 tbl2 <- tbl[[2]]
 ## removing columns that are not required, iso 2, numeric value and link
 tbl2 <- tbl2[, -c(2,4,5)]
@@ -94,7 +97,7 @@ tbl2 <- tbl2[, -c(2,4,5)]
 ## Renaming the column headers
 iso_codes_all <- tbl2 |> rename(name = 1) |> rename(iso3 = 2) |> rename(independent = 3)
 
-head(iso_codes_all)
+head(iso_codes_all, 10)
 
 ```
 
@@ -130,11 +133,10 @@ wpop
 ```
 
 ```{r}
-
 ## Inner joining the two tables to get one table with only those countries that have a matching iso code
 wpop <- wpop_full |> inner_join(iso_codes, by = c("Country Code" = "iso3") )
 
-head(wpop)
+head(wpop, 10)
 #View(wpop)
 ```
 
@@ -147,14 +149,13 @@ Show the countries/areas which have the same ISO country code in both `wpop` and
 ```
 
 ```{r}
-
-## Making a local version of the iso table and selecting only "Country Name", "Country Code" and "name"
+## Making a local version of the wpop table and selecting only "Country Name", "Country Code" and "name"
 ex5_wpop <- wpop[, c(1, 2,66)]
 
 ## Filtering where "Country Name" is different from "name", i.e. where the name of the country is different
 ex5_wpop <- ex5_wpop |> filter(`Country Name` != name)
 
-head(ex5_wpop)
+head(ex5_wpop, 10)
 #View(ex5_wpop)
 
 ```
@@ -174,6 +175,7 @@ continents
 ```
 
 ```{r}
+## Setting the url
 ex6_wiki_jump <- 'https://en.wikipedia.org/wiki/List_of_sovereign_states_and_dependent_territories_by_continent_(data_file)'
 
 
@@ -185,13 +187,13 @@ ex6_tbl <- ex6_long_jump |>
 ex6_tbl |> head()
 ## The table we need pertaining country name and other information is the third (3) table
 ex6_tbl2 <- ex6_tbl[[3]]
-## removing columns that are not required, iso 2, numeric value and link
+## removing columns that are not required, iso 2, numeric value, and link
 ex6_tbl2 <- ex6_tbl2[, -c(2,4,5)]
 
 ## Renaming the column headers
 continents <- ex6_tbl2 |> rename(continent = 1) |> rename(iso3 = 2)
 
-head(continents)
+head(continents, 10)
 ```
 
 ## **Exercise 7**
@@ -214,10 +216,10 @@ ex7_continents <- continents
 ## joining wpop and continents
 wpop2 <- ex7_wpop |> inner_join(ex7_continents, by = c("Country Code" = "iso3") )
 
-## Moving the column with continents (48) to the first column
+## Moving the column with continents (68) to the first column
 wpop2 <- wpop2 |> relocate(68, .before = 1)
 
-head(wpop2)
+head(wpop2, 10)
 ```
 
 ## **Exercise 8**
@@ -236,7 +238,7 @@ pop_long
 ## Making a local copy
 ex8_wpop <- wpop2
 
-## Using the pivot_longer to make the data set in long format, where columns 1960-2022 is now in a column named year with population in the next column
+## Using the pivot_longer to make the data set in long format, where columns 1960-2022 is now in a column named "year" with "pop" (population) in the next column
 pop_long <- ex8_wpop |> pivot_longer(cols = '1960':'2022', names_to = "year", values_to = "pop" )
 
 ## Removes unused columns
@@ -245,7 +247,7 @@ pop_long <- pop_long[, c(-4, -5)]
 ## Making year into doubles
 pop_long <- pop_long |> mutate(year = as.numeric(year))
 
-head(pop_long)
+head(pop_long, 10)
 ## View(pop_long)
 
 ```
@@ -261,10 +263,9 @@ ex9_wpop <- pop_long[, -c(1, 3)]
 ## Building a ggplot graph
 ex9_wpop_final <- ggplot(ex9_wpop, aes(x = year, y = pop, group = `Country Name`)) + 
   geom_line(alpha = 0.1)+
-  ## geom_point()+ 
   labs(x = "Year", y = "Population")
 
-ex9_wpop_final
+ex9_wpop_final ## Showing the plot
 
 
 ```
@@ -274,11 +275,10 @@ ex9_wpop_final
 Use the code below to rescale each country’s population size to an population index which in 1 for every country in 1960. An index value of e.g. 2 would mean that the population size of that country has doubled since 1960.
 
 ```{r}
+## making a local version and renaming columns
 ex10_pop_long <- pop_long |> rename(country = 2) |> rename(code = 3) |> rename(pop = 5)
-##pop_index <- ex10_pop_long |> 
-##  group_by('Country Name',continent, 'Country Code') |> 
-##  mutate(pop_index = pop/pop[1])
 
+## grouping the ex10_pop_long and setting a new column called "pop_index"
 pop_index <- ex10_pop_long |> 
   group_by(country,continent,code) |> 
   mutate(pop_index = pop/pop[1])
@@ -290,12 +290,12 @@ pop_index <- ex10_pop_long |>
 Make a line plot showing the indexed population numbers over all the years in the data with one line per country with semi-transparent lines.
 
 ```{r}
-
+## Building a plot for the indexed population numbers
 ex11_pl_pop <- ggplot(pop_index, aes(x = year, y = pop_index, group = country)) +
   geom_line(alpha = .1) +
   labs(x = "Year", y = "Population")
 
-print(ex11_pl_pop)
+ex11_pl_pop
 
 ```
 
@@ -304,16 +304,15 @@ print(ex11_pl_pop)
 Identify the two countries with extreme population indices and make a new line plot showing the indexed population numbers over all the years in the data with one line per country with semi-transparent lines **without these two countries**.
 
 ```{r}
-
-## ex12_pl_pop <- pop_index |> filter(country != 'Qatar')
-
+## Removing "Qatar" and "United Arab Emirates" from the df. They are moved as the have seen a high degree of population growth, making it difficult to see the rest of the countries
 ex12_pl_pop <- pop_index |> filter(!country %in% c('Qatar', 'United Arab Emirates')) 
 
+## Building a plot
 ex12_final <- ggplot(ex12_pl_pop, aes(x = year, y = pop_index, group = country)) +
   geom_line(alpha = .1) +
   labs(x = "Year", y = "Population")
 
-print(ex12_final)
+ex12_final
 
 ```
 
@@ -340,13 +339,12 @@ growth_long <- ex13_pop_long |>
 Make a line plot showing the population over all the years in the data with one line per country with semi-transparent lines
 
 ```{r}
-## Using the growth_long data set having end-year on and growth on y
+## Using the growth_long data set having end-year on x and growth on y
 ex14_final <- ggplot(growth_long, aes(x = end_year, y = growth, group = country)) +
   geom_line(alpha = .1) +
   labs(x = "Year", y = "Year-to-year population growth in pct.")
 
-print(ex14_final)
-
+ex14_final
 
 ```
 
@@ -355,12 +353,12 @@ print(ex14_final)
 Make a similar graphic as above but with one panel/facet per continent.
 
 ```{r}
-## Building a ggplot with end_year on x and growth on y (similar to ex 11) but this time having them in a graph per continent
+## Building a ggplot with "end_year" on x and "growth" on y (similar to exercise 11) but this time having them in a graph per continent
 ex15_final <- ggplot(growth_long, aes(x = end_year, y = growth, group = country)) + 
   geom_line(alpha = .1) + 
   labs(x = "Year", y = "Year-to-year population growth in pct.") 
 
-## This is the command to show them according to continent
+## This is the command to show them according to continent i.e. in 6 charts
 ex15_final + facet_wrap(~continent)
   
 
@@ -381,8 +379,10 @@ growth_range
 ```
 
 ```{r}
-## selecing only country and growth from growth_long. Grouping them by country and finding the max and min value for each coutry
+## selecing only "country" and "growth" from "growth_long". Grouping them by country and finding the max and min value for each coutry
 growth_range <- growth_long |> select(country, growth) |> group_by(country) |> summarise(max_growth = max(growth), min_growth = min(growth))
+
+head(growth_range, 10)
 
 ```
 
@@ -424,13 +424,13 @@ Make a line plot showing the population over all the years in the data with diff
 ## Making a copy of top10
 ex19_top10 <- top10
 
-## joining top10 with growth_long by country, where the countries exist in both tables and only selecting country, growth and end_year
+## joining top10 with growth_long by "country", where the countries exist in both tables and only selecting "country", "growth" and "end_year"
 ex19_top10_final <- inner_join(ex19_top10, growth_long, by = 'country') |> select(country, growth, end_year)
 
 ## Making the ggplot
 ex19_top10_final_plot <- ex19_top10_final |> ggplot(aes(x = end_year, y = growth, colour = country)) +
   geom_line(alpha = 4) +
-  labs(x = "end_year", y = "growth") ## The labels on the x and y axis
+  labs(x = "end_year", y = "growth")
 
 ## Showing the plot
 print(ex19_top10_final_plot)
@@ -448,14 +448,13 @@ growth
 ```
 
 ```{r}
-
 ## Making a local copy and removing pop_start and pop_end
 ex20_wpop <- growth_long[, c(-4, -5)]
 
-## Using the pivot_wider to make the data set in wide format, where end_year is moved up as a header and the growth and the values
+## Using the pivot_wider to make the data set in wide format, where "end_year" is moved up as a header and the "growth" and the values
 growth <- ex20_wpop |> pivot_wider(names_from = end_year, values_from = growth) |> group_by(country)
 
-head(growth)
+head(growth, 10)
 ```
 
 ## **Exercise 21**
@@ -473,10 +472,10 @@ Make a hierarchical clustering of the growth data in 9 groups. The following hin
 5.  Use mutate to add the cluster label as a variable to `growth`
 
 ```{r}
-## Making a local version
+## Making a local version and removing columns 1, 2, and 3
 ex21_growth <- growth[, -c(1, 2, 3)]
 
-## Calculating distance
+## Calculating distance using the "euclidean" method
 ex21_growth_dvec <- dist(ex21_growth, method = "euclidean")
 
 ## Making the clustering
@@ -502,7 +501,7 @@ growth_clust <- cl |> mutate(growth)
 ## Making the clust column into a factor and not an int
 growth_clust$clust <- as.factor(growth_clust$clust)
 
-head(growth_clust)
+head(growth_clust, 10)
 
 ```
 
@@ -515,6 +514,7 @@ growth_clust |>    group_split(clust) |>    lapply(function(x) x$country) |>    
 ```
 
 ```{r}
+## Using the provided code to extract the countries in each cluster
 growth_clust |> 
   group_split(clust) |> 
   lapply(function(x) x$country) |> 
@@ -536,7 +536,7 @@ growth_clust_long <- growth_clust_long[, c(-3, -4)]
 ## making year into a nummeric value, so it can scale in sequence later on
 growth_clust_long$year <- as.numeric(growth_clust_long$year)
 
-head(growth_clust_long)
+head(growth_clust_long, 10)
 
 ## Making the plot with year on x and population growth on y, grouped by country. scale on x is set to the years from 1960 to 2022, with two decades spread and spread on y-axis from -25 to 25
 ex23_final <- ggplot(growth_clust_long, aes(x = year, y = pop_growth_pct, group = country))+ 
@@ -548,11 +548,11 @@ ex23_final <- ggplot(growth_clust_long, aes(x = year, y = pop_growth_pct, group 
 
 ex23_final + facet_wrap(~clust, scales = "free")
 
-
-
 ```
 
-## **Exercise**
+## **Exercise 24** 
+
+NOTE: I've renamed the exercise into exercise 24, originally it did not have a number
 
 The code below can be used to calculate average growth rates over several years.
 
@@ -562,8 +562,10 @@ agg_year <- 5 aggr_growth_long <- growth_long |>   mutate(period=((end_year - mi
 
 Use the clustering technique of the previous exercise to divide the data into different clusters. Experiment with several period lengths (aggregation years) and number of clusters and show results for at least one combination of `agg_year` and number of clusters. An example is given below.
 
+**Version 1 - aggregation set to 5 and clusters set to 9**
+
 ```{r}
-## Inserted code from exercise
+## Inserted the provided code from exercise 24
 agg_year <- 5
 aggr_growth_long <- growth_long |>
   mutate(period=((end_year - min(end_year)) %/% agg_year) * agg_year + min(end_year)) |> 
@@ -574,7 +576,6 @@ aggr_growth_long
 ex24_final <- ggplot(aggr_growth_long, aes(x = period, y = pop, group = country))+ 
   geom_line(alpha = 0.1)  + 
   labs(title = "x", x = "year", y = "Population") + 
-  ## theme_minimal() +
   scale_x_continuous(breaks = seq(1960, 2022, by = 20)) + 
   scale_y_continuous(limits = c(-10, 15))
 
@@ -585,14 +586,10 @@ ex24_final
 ## Making a local copy and removing pop_start and pop_end
 ex24_wpop <- aggr_growth_long[, c(-2, -4)]
 
-## Using the pivot_wider to make the data set in wide format, where end_year is moved up as a header and the growth and the values
+## Using the pivot_wider to make the data set in wide format, where period is moved up as a header and the pop (population) set as the values
 ex24_aggr_growth <- ex24_wpop |> pivot_wider(names_from = period, values_from = pop) |> group_by(country)
 
-head(ex24_aggr_growth)
-
-
-## Making a local version
-## ex24_aggr_growth_long <- aggr_growth_long[, -c(2, 4)]
+head(ex24_aggr_growth, 10)
 
 ## Calculating distance
 ex24_aggr_growth_long_dvec <- dist(ex24_aggr_growth, method = "euclidean")
@@ -609,7 +606,7 @@ ex24_cl |> head(5)
 names(ex24_cl) <- paste0("clust")
 rownames(ex24_cl) <- ex24_aggr_growth_long_hc$labels
 
-## Combining the cluster output (ex24_cl) and the original "aggr_growth_long" dataframe
+## Combining the cluster output (ex24_cl) and the original "ex24_aggr_growth" dataframe
 ex24_growth_clust <- ex24_cl |> mutate(ex24_aggr_growth)
 
 ## Making the clust column into a factor and not an int
@@ -629,14 +626,7 @@ ex24_growth_clust |>
 ## Using the pivot_longer to make the data set in long format, where columns 1961-2022 is now in a column named year with population growth in procent in the next column
 ex24_growth_clust_long <- ex24_growth_clust |> pivot_longer(cols = '1961':'2021', names_to = "year", values_to = "pop_growth_pct")
 
-
-## Removes unused columns
-## ex24_growth_clust_01 <- ex24_growth_clust[, c(-3, -5)]
-
-## making year into a nummeric value, so it can scale in sequence later on
-## ex24_growth_clust_01$period <- as.numeric(ex24_growth_clust_01$period)
-
-head(ex24_growth_clust_long)
+head(ex24_growth_clust_long, 10)
 
 ## Making the plot with year on x and population growth on y, grouped by country. scale on x is set to the years from 1960 to 2022, with two decades spread and spread on y-axis from -25 to 25
 ex24_final <- ggplot(ex24_growth_clust_long, aes(x = year, y = pop_growth_pct, group = country))+ 
@@ -645,4 +635,79 @@ ex24_final <- ggplot(ex24_growth_clust_long, aes(x = year, y = pop_growth_pct, g
   scale_y_continuous(limits = c(-8, 17))
 
 ex24_final + facet_wrap(~clust, scales = "free")
+```
+
+**Version 2 - aggregation set to 10 and clusters set to 4**
+
+```{r}
+## Inserted the provided code from exercise 24
+agg_year_v2 <- 10
+aggr_growth_long_v2 <- growth_long |>
+  mutate(period=((end_year - min(end_year)) %/% agg_year_v2) * agg_year_v2 + min(end_year)) |> 
+  group_by(period, code, country, continent) |> summarise(pop = mean(growth))
+
+aggr_growth_long_v2
+
+ex24_final_v2 <- ggplot(aggr_growth_long_v2, aes(x = period, y = pop, group = country))+ 
+  geom_line(alpha = 0.1)  + 
+  labs(title = "x", x = "year", y = "Population") + 
+  scale_x_continuous(breaks = seq(1960, 2022, by = 20)) + 
+  scale_y_continuous(limits = c(-10, 15))
+
+ex24_final_v2
+```
+
+```{r}
+## Making a local copy and removing pop_start and pop_end
+ex24_wpop_v2 <- aggr_growth_long_v2[, c(-2, -4)]
+
+## Using the pivot_wider to make the data set in wide format, where period is moved up as a header and the pop (population) set as the values
+ex24_aggr_growth_v2 <- ex24_wpop_v2 |> pivot_wider(names_from = period, values_from = pop) |> group_by(country)
+
+head(ex24_aggr_growth_v2, 10)
+
+## Calculating distance
+ex24_aggr_growth_long_dvec_v2 <- dist(ex24_aggr_growth_v2, method = "euclidean")
+
+## Making the clustering
+ex24_aggr_growth_long_hc_v2 <- hclust(ex24_aggr_growth_long_dvec_v2)
+
+## Using 9 clusters to organize
+ex24_clusters_2 <- c(4)
+ex24_cl_v2 <- cutree(ex24_aggr_growth_long_hc_v2, k=ex24_clusters_2) |> as.data.frame()
+ex24_cl_v2 |> head(5)
+
+## Changing the name of the cluster column to "clust"
+names(ex24_cl_v2) <- paste0("clust")
+rownames(ex24_cl_v2) <- ex24_aggr_growth_long_hc_v2$labels
+
+## Combining the cluster output (ex24_cl_v2) and the original "ex24_aggr_growth" dataframe
+ex24_growth_clust_v2 <- ex24_cl_v2 |> mutate(ex24_aggr_growth_v2)
+
+## Making the clust column into a factor and not an int
+ex24_growth_clust_v2$clust <- as.factor(ex24_growth_clust_v2$clust)
+
+head(ex24_growth_clust_v2, 10)
+```
+
+```{r}
+ex24_growth_clust_v2 |> 
+  group_split(clust) |> 
+  lapply(function(x) x$country) |> 
+  pander::pander()
+```
+
+```{r}
+## Using the pivot_longer to make the data set in long format, where columns 1961-2021 is now in a column named year with population growth in procent in the next column
+ex24_growth_clust_long_v2 <- ex24_growth_clust_v2 |> pivot_longer(cols = '1961':'2021', names_to = "year", values_to = "pop_growth_pct")
+
+head(ex24_growth_clust_long_v2, 10)
+
+## Making the plot with year on x and population growth on y, grouped by country. scale on x is set to the years from 1960 to 2022, with two decades spread and spread on y-axis from -25 to 25
+ex24_final_v2 <- ggplot(ex24_growth_clust_long_v2, aes(x = year, y = pop_growth_pct, group = country))+ 
+  geom_line(alpha = 0.5)  + 
+  labs(title = "Diagram", x = "year", y = "pop") + 
+  scale_y_continuous(limits = c(-8, 17))
+
+ex24_final_v2 + facet_wrap(~clust, scales = "free")
 ```
