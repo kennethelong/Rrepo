@@ -582,11 +582,20 @@ ex24_final
 ```
 
 ```{r}
+## Making a local copy and removing pop_start and pop_end
+ex24_wpop <- aggr_growth_long[, c(-2, -4)]
+
+## Using the pivot_wider to make the data set in wide format, where end_year is moved up as a header and the growth and the values
+ex24_aggr_growth <- ex24_wpop |> pivot_wider(names_from = period, values_from = pop) |> group_by(country)
+
+head(ex24_aggr_growth)
+
+
 ## Making a local version
-ex24_aggr_growth_long <- aggr_growth_long[, -c(2, 4)]
+## ex24_aggr_growth_long <- aggr_growth_long[, -c(2, 4)]
 
 ## Calculating distance
-ex24_aggr_growth_long_dvec <- dist(ex24_aggr_growth_long, method = "euclidean")
+ex24_aggr_growth_long_dvec <- dist(ex24_aggr_growth, method = "euclidean")
 
 ## Making the clustering
 ex24_aggr_growth_long_hc <- hclust(ex24_aggr_growth_long_dvec)
@@ -601,7 +610,7 @@ names(ex24_cl) <- paste0("clust")
 rownames(ex24_cl) <- ex24_aggr_growth_long_hc$labels
 
 ## Combining the cluster output (ex24_cl) and the original "aggr_growth_long" dataframe
-ex24_growth_clust <- ex24_cl |> mutate(ex24_aggr_growth_long)
+ex24_growth_clust <- ex24_cl |> mutate(ex24_aggr_growth)
 
 ## Making the clust column into a factor and not an int
 ex24_growth_clust$clust <- as.factor(ex24_growth_clust$clust)
@@ -618,24 +627,22 @@ ex24_growth_clust |>
 
 ```{r}
 ## Using the pivot_longer to make the data set in long format, where columns 1961-2022 is now in a column named year with population growth in procent in the next column
-##ex24_growth_clust_long <- ex24_growth_clust |> pivot_longer(cols = '1961':'2022', names_to = "year", values_to = "pop_growth_pct")
+ex24_growth_clust_long <- ex24_growth_clust |> pivot_longer(cols = '1961':'2021', names_to = "year", values_to = "pop_growth_pct")
 
 
 ## Removes unused columns
-ex24_growth_clust_01 <- ex24_growth_clust[, c(-3, -5)]
+## ex24_growth_clust_01 <- ex24_growth_clust[, c(-3, -5)]
 
 ## making year into a nummeric value, so it can scale in sequence later on
-ex24_growth_clust_01$period <- as.numeric(ex24_growth_clust_01$period)
+## ex24_growth_clust_01$period <- as.numeric(ex24_growth_clust_01$period)
 
-head(ex24_growth_clust_01)
+head(ex24_growth_clust_long)
 
 ## Making the plot with year on x and population growth on y, grouped by country. scale on x is set to the years from 1960 to 2022, with two decades spread and spread on y-axis from -25 to 25
-ex23_final <- ggplot(ex24_growth_clust_01, aes(x = period, y = pop, group = country))+ 
-  geom_line(alpha = 1)  + 
+ex24_final <- ggplot(ex24_growth_clust_long, aes(x = year, y = pop_growth_pct, group = country))+ 
+  geom_line(alpha = 0.5)  + 
   labs(title = "Diagram", x = "year", y = "pop") + 
-  ## theme_minimal() +
-  scale_x_continuous(breaks = seq(1960, 2022, by = 10)) + 
-  scale_y_continuous(limits = c(-10, 20))
+  scale_y_continuous(limits = c(-8, 17))
 
-ex23_final + facet_wrap(~clust, scales = "free")
+ex24_final + facet_wrap(~clust, scales = "free")
 ```
