@@ -34,11 +34,14 @@ To enhance readability steps are broken down and operations performed one at a t
 
 ## Libraries required to execute this file
 library(ggplot2)
+library(tidyverse)
 library(broom)
 library(dplyr)
 library(modelr)
 library(doBy)
 library(ggcorrplot)
+library(randomForest)
+library(rpart.plot)
 ```
 
 ## **Data**
@@ -47,31 +50,32 @@ This part uses the `personality` dataset from the R package `doBy` with recordin
 
 We focus on the variable `easygon` as the response variable. We split the data in training and test data as follows:
 
-```{r, fig.height=20, fig.width=14}
+```{r}
+## Loading the personality data into dat
 dat <- doBy::personality
-set.seed(101) # for reproducibility
+## Setting a seed for reproducibility. I means that all "random" numbers will start based on the seed
+set.seed(101)
+## Selects half the data set
 i_train <- sample(nrow(dat), .5*nrow(dat))
+## Puts one half into train
 train <- dat[i_train,]
+## And the other  half into test
 test <- dat[-i_train,]
 
-column_names <- colnames(dat)
-print(column_names)
+## column_names <- colnames(dat)
+## print(column_names)
 ```
 
 ## **Exercise 1**
 
 Use `response_plot()` from the **development version of** `doBy` to visualize the relation between the response and the other variables in the data.
 
-```{r}
-## dat |> doBy::response_plot(easygon ~ ., c(geom_jitter(alpha = .1, weight = .1)))
-
-## dat |> doBy::response_plot(easygon ~ ., geoms = c(geom_jitter(alpha = .1, width = .1)))
-
+```{r, fig.height=20, fig.width=14}
+## Bulding a response plot using the doBy response_plot function using the data from dat (i.e. the full data set)
 responsePlot <- doBy::response_plot(easygon ~ ., data = dat, geoms = c(geom_jitter(alpha = .5, width = .5))) + 
  theme(aspect.ratio = 3) + 
   facet_wrap(~ variable_name, ncol = 15) 
 
-## test + facet_wrap(~variable_name, ncol = 5) 
 ```
 
 ## **Exercise 3**
@@ -84,6 +88,8 @@ Specify a number of prediction models – at least one of each of the following:
 
 3.  random forest (`randomForest`)
 
+**(1) Stepwise Selection**
+
 ```{r}
 ## 
 round(10*cor(dat)) |> ggcorrplot(, hc.order = TRUE, type = "lower", lab = TRUE)+ 
@@ -91,19 +97,88 @@ round(10*cor(dat)) |> ggcorrplot(, hc.order = TRUE, type = "lower", lab = TRUE)+
 ```
 
 ```{r}
+## The lm_full uses the data from the "train" data set and with easygon (easy going) as the response variable and all others as predictors
 lm_full <- lm(easygon ~ ., data = train)
+## building a linear regression with no predictors
 lm_1 <- lm(easygon ~ 1, data = train)
+## calculates the Akaike Information Criterion (AIC) for lm_full
 lm_full |> AIC()
+## calculates the Akaike Information Criterion (AIC) for lm_1
 lm_1 |> AIC()
 
+
+```
+
+lm_full \|\> AIC() = 412.0621
+
+lm_1 \|\> AIC() = 440.9609
+
+This indicates that the full model (with the lower AIC of 4is a better fit than the intercept model
+
+```{r}
+## Stepwise selection starting from lm_1 and moving forwards using the full model to determine the variables to be included
 lm_forw <- step(lm_1, direction="forward", scope=terms(lm_full), trace=0)
+## Backwards stepwise selection frrom lm_full
 lm_back <- step(lm_full, direction="backward", trace=0)
+## Stepwise in both directions
 lm_both <- step(lm_1, direction="both", scope=terms(lm_full), trace=0)
 
+## Creating a list of the models
 model_list <- list(lm_1=lm_1, lm_forw=lm_forw, lm_both=lm_both, lm_back=lm_back, lm_full=lm_full)
+## Apply the AIC for each model
 model_list |> sapply(AIC)
 
+## Apply the root mean squared error (rmse) on the train data set
 model_list |> sapply(function(x) rmse(x, train))
 
+## Apply the rmse on the test set
 model_list |> sapply(function(x) rmse(x, test))
+```
+
+Output inserted to be able to reference, even if the base data were to change
+
+![](images/clipboard-3548421976.png){width="327"}
+
+The first row are the output of the AIC on the model_list. A low AIC score indicates a better fit than a higher AIC. AIC on the full model was 412.0621 using the lm function and the score on lm_1 mode was 440.
+
+With the 3 additional models, forward, backward and both directional selection, the forward and backwards model both produce a AIC score of 382.9833, indicating a better fit.
+
+The root mean squared error (rmse) calculated on the training data (the data the models were trained on) indicates a good fit on the full model (rmse = 1.0233), followed by the backward model (1.0592).
+
+The rmse on the test data, i.e. new data, indicates a good fir with both the forward and both directional models (rmse = 1.3497) followd by the backward model (rmse = 1.4436). The null model (lm_1) performs worst (rmse = 1.6958)
+
+**(2) Regression Tree**
+
+**(3) Random Forest**
+
+```{r}
+set.seed(2024)
+
+personality_random_forest <- randomForest(easygon ~ ., data = train, importance = TRUE)
+
+personality_random_forest
+
+varImpPlot(personality_random_forest)
+```
+
+```{r}
+personality_tune <- tuneRF(y = train$easygon, x = select(train, -easygon), improve = 0.001)
+
+
+```
+
+```{r}
+personality_first_tree <- rpart::rpart(easygon ~ carelss + laidbck, data = train, cp = 0)
+rpart.plot(personality_first_tree, roundint = FALSE)
+```
+
+```{r}
+train |> 
+  ggplot(aes(x = easygon, y = carelss, color = Class)) + 
+  geom_jitter(alpha=0.7) +
+  parttree::geom_parttree(data = personality_first_tree, aes(fill=Class), alpha = 0.1) +
+  theme_minimal() + 
+  scale_y_continuous(n.breaks = 10) + 
+  scale_x_continuous(n.breaks = 10)
+
 ```
