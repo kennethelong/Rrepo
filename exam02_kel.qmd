@@ -1,13 +1,109 @@
+---
+title: "Exam01"
+author: "Kenneth"
+format: html
+editor: visual
+embed-ressources: true
+---
+
 **Data science exam: part 2**
 
-Author
-
-\[names\]
-
 # **Part II - 1: Regression**
+
+**Introduction - Read Me**
+
+This file contains the work of **Kenneth Elong**. It was submitted for review on the 15th of October.
+
+All exercises were solved by Kenneth Elong. No one else have provided any code for the solving of the exercises. I did however discuss possible solutions and errors I encountered witth a group of students also attending the course.
+
+~~The exercises were found in the file *exam1.html* in the *Eksamensprojekter* in <https://www.moodle.aau.dk/mod/folder/view.php?id=1812259>~~
+
+I have included the exercise description for each exercise for reference. In some cases the expected output is also included.
+
+~~This work can also be found on github at <https://github.com/kennethelong/Rrepo/blob/main/exam01_kel.qmd>~~
+
+I have not used, or commented it out, View(xx) and mostly relied on head(xx). I have often opted to show the first 10 lines, to give better overview of the result.
+
+Generally I have made a "local" copy of a the used df for each exercise. This is done in an effort to ensure a high degree of repeatability. Instead of e.g. using df "wpop" from a previous exercise and manipulating it, most often a local version is made e.g. ex2x_wpop \<- wpop. Thereby I do not have to rerun previous exercises to get a df that is required as input.
+
+To enhance readability steps are broken down and operations performed one at a time. Readability enhances durability of code, because as it may be a computer that executes the commands, it is always a human that will need to understand, change, and reuse the commands.
+
+```{r}
+## To execute this file the "here" package needs to be installed
+## install.packages("here")
+
+## Libraries required to execute this file
+library(ggplot2)
+library(broom)
+library(dplyr)
+library(modelr)
+library(doBy)
+library(ggcorrplot)
+```
 
 ## **Data**
 
 This part uses the `personality` dataset from the R package `doBy` with recordings of 32 variables describing personality characteristics for 240 people. (see help file for `?personality`)
 
 We focus on the variable `easygon` as the response variable. We split the data in training and test data as follows:
+
+```{r, fig.height=20, fig.width=14}
+dat <- doBy::personality
+set.seed(101) # for reproducibility
+i_train <- sample(nrow(dat), .5*nrow(dat))
+train <- dat[i_train,]
+test <- dat[-i_train,]
+
+column_names <- colnames(dat)
+print(column_names)
+```
+
+## **Exercise 1**
+
+Use `response_plot()` from the **development version of** `doBy` to visualize the relation between the response and the other variables in the data.
+
+```{r}
+## dat |> doBy::response_plot(easygon ~ ., c(geom_jitter(alpha = .1, weight = .1)))
+
+## dat |> doBy::response_plot(easygon ~ ., geoms = c(geom_jitter(alpha = .1, width = .1)))
+
+responsePlot <- doBy::response_plot(easygon ~ ., data = dat, geoms = c(geom_jitter(alpha = .5, width = .5))) + 
+ theme(aspect.ratio = 3) + 
+  facet_wrap(~ variable_name, ncol = 15) 
+
+## test + facet_wrap(~variable_name, ncol = 5) 
+```
+
+## **Exercise 3**
+
+Specify a number of prediction models – at least one of each of the following:
+
+1.  linear with stepwise selection (`lm` / `step`)
+
+2.  regression tree (`rpart`)
+
+3.  random forest (`randomForest`)
+
+```{r}
+## 
+round(10*cor(dat)) |> ggcorrplot(, hc.order = TRUE, type = "lower", lab = TRUE)+ 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1))
+```
+
+```{r}
+lm_full <- lm(easygon ~ ., data = train)
+lm_1 <- lm(easygon ~ 1, data = train)
+lm_full |> AIC()
+lm_1 |> AIC()
+
+lm_forw <- step(lm_1, direction="forward", scope=terms(lm_full), trace=0)
+lm_back <- step(lm_full, direction="backward", trace=0)
+lm_both <- step(lm_1, direction="both", scope=terms(lm_full), trace=0)
+
+model_list <- list(lm_1=lm_1, lm_forw=lm_forw, lm_both=lm_both, lm_back=lm_back, lm_full=lm_full)
+model_list |> sapply(AIC)
+
+model_list |> sapply(function(x) rmse(x, train))
+
+model_list |> sapply(function(x) rmse(x, test))
+```

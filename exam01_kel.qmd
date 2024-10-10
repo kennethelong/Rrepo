@@ -1,8 +1,9 @@
 ---
 title: "Exam01"
 author: "Kenneth"
-format: html
-editor: visual
+format: 
+  html:
+    embed-ressources: true
 ---
 
 # **Data science exam: part 1**
@@ -550,7 +551,7 @@ ex23_final + facet_wrap(~clust, scales = "free")
 
 ```
 
-## **Exercise 24** 
+## **Exercise 24**
 
 NOTE: I've renamed the exercise into exercise 24, originally it did not have a number
 
