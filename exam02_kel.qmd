@@ -62,8 +62,6 @@ personality_train <- personality_dat[personality_i_train,]
 ## And the other  half into test
 personality_test <- personality_dat[-personality_i_train,]
 
-## column_names <- colnames(dat)
-## print(column_names)
 ```
 
 ## **Exercise 1**
@@ -98,9 +96,9 @@ round(10*cor(personality_dat)) |> ggcorrplot(, hc.order = TRUE, type = "lower", 
 
 ```{r}
 ## The lm_full uses the data from the "train" data set and with easygon (easy going) as the response variable and all others as predictors
-lm_full <- lm(easygon ~ ., data = train)
+lm_full <- lm(easygon ~ ., data = personality_train)
 ## building a linear regression with no predictors
-lm_1 <- lm(easygon ~ 1, data = train)
+lm_1 <- lm(easygon ~ 1, data = personality_train)
 ## calculates the Akaike Information Criterion (AIC) for lm_full
 lm_full |> AIC()
 ## calculates the Akaike Information Criterion (AIC) for lm_1
@@ -129,10 +127,10 @@ model_list <- list(lm_1=lm_1, lm_forw=lm_forw, lm_both=lm_both, lm_back=lm_back,
 model_list |> sapply(AIC)
 
 ## Apply the root mean squared error (rmse) on the train data set
-model_list |> sapply(function(x) rmse(x, train))
+model_list |> sapply(function(x) rmse(x, personality_train))
 
 ## Apply the rmse on the test set
-model_list |> sapply(function(x) rmse(x, test))
+model_list |> sapply(function(x) rmse(x, personality_test))
 ```
 
 Output inserted to be able to reference, even if the base data were to change
@@ -188,7 +186,95 @@ rpart.plot(personality_rpart_prune, main = paste("Pruned tree, cp:", cp_value))
 
 From the pruned tree it possible to conclude that the primary predictor for easy going (easygon) people is the laid back (laidbck) score.
 
+People who score less than 6 of being laid back, have an average score 5.4 for easy going. Within this group relaxed (relaxed) becomes important. People scoring below 6 on relaxed, score 5.2 on easy going.
+
+People with a laid back score above 6 score 6.8 on easy going. Among this group tenseness (tense) becomes important. People scoring below 7 on tenseness score 4 on easy going, while people scoring 7 or above on tenseness score 6.9 on easy going.
+
+**Prediction model**
+
+```{r}
+personality_rpart_temp <- rpart(easygon ~ ., data = personality_train, method = "class")
+
+personality_pred  <- as_tibble(predict(personality_rpart_temp, type = "prob")) 
+##|> mutate(pred_class = ifelse(easygon > 0.5, "easy-going", "not_easy-going"))
+
+personality_pred <- personality_pred |>
+  mutate(pred_class = ifelse(easygon > 0.5, "easygoing", "not_easygoing"))
+
+```
+
+Some text
+
+```{r}
+set.seed(123)
+N <- nrow(personality_dat)
+n_rep <- 4
+row_index <- replicate(n_rep, 
+                       sample(N, size = N, replace = TRUE), 
+                       simplify = FALSE)
+
+personality_resamp <- 
+  lapply(row_index, function(x) rpart(easygon ~ ., data = personality_dat, subset = x))
+
+par(mfrow = c(2,2))
+for (i in 1:length(personality_resamp)) {
+  # Create the plot for each resampled tree
+  rpart.plot(personality_resamp[[i]], main = paste(i, "subsample"))
+}
+
+```
+
 **(3) Random Forest**
+
+```{r}
+set.seed(123)
+
+
+personality_resamp1 <- 
+  lapply(row_index, function(x) {
+    # Fit a random forest model for each resample (or use rpart if desired)
+    randomForest(easygon ~ ., data = personality_dat, subset = x)
+  })
+
+# Make predictions for the test data using each resampled model
+predictions <- 
+  lapply(personality_resamp1, function(model) {
+    predict(model, newdata = personality_test, type = "class") # Predict class
+  }) |> 
+  set_names(paste0("resample", 1:n_rep)) 
+
+results <- 
+  bind_cols(predictions, 
+            true_class = personality_test$easygon) |> 
+  mutate(row = row_number()) |> 
+  relocate(row, true_class)
+
+# Optionally, display a random subset of 10 rows
+results_sample <- slice_sample(results, n = 10)
+
+# Show the output of the randomly selected rows
+print(results_sample)
+
+## ---------------------------
+
+## Making a local copy
+personality_train_ex3 <- personality_train
+personality_test_ex3 <- personality_test
+
+personality_train_ex3$easygon <- as.factor(personality_train_ex3$easygon)
+personality_test_ex3$easygon <- as.factor(personality_test_ex3$easygon)
+
+
+personality_rf_model <- randomForest(easygon ~ ., data = personality_train_ex3, 
+                         importance = TRUE, 
+                         ntree = 500, 
+                         type = `classification`) 
+
+print(personality_rf_model)
+
+```
+
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
 ```{r}
 set.seed(2024)
@@ -234,6 +320,30 @@ personality_rpart
 rpart.plot(personality_rpart, digits = 3)
 ```
 
+## **Exercise 4**
+
+For **one of** the linear models show the estimated coefficients and comment **briefly** on the output (for example, comment on the sign of the estimates).
+
+```{r} summary(lm_forw)}
+```
+
+This is a linear model that moves forward to identify the best possible model.
+
+The intercept of this model is at -0.01123.
+
+The laid back (laidbck) variable has a positive coefficient of 0.37 (0.36568), meaning that if easy going trait (easygon) increases one unit, laid back trait increases by 0.37. The standard error (std.error) for laid back is 0.08 (0.07899) indicating a high degree of reliability.
+
+Cooperativeness (coopera) also have a significant positive coefficient of 0.38 (0.38126) and a fairly low standard error of 0.1 (0.09883), indicating that it's less reliable than laid back.
+
+The two negative predictors persevering (persevr) and harsh (harsh) are negatively associated with easygoingness in this model.
+
+## **Exercise 5**
+
+Compare the performance of the fitted models by predicting the values of `easygon` for the test data and show a plot comparing the predictions to the observations from the test data. Also make a table of the RMSE for each model.
+
+```{r}
+```
+
 # **Part II - 2: Classification**
 
 The dataset `diabetes.csv` is about risk factors for diabetes and contains 768 observations of 9 variables. The response variable is `Outcome` which is binary. The goal is to predict `Outcome` using the other variables. A description of the dataset can be found at <https://www.kaggle.com/datasets/mathchi/diabetes-data-set/data>
@@ -269,37 +379,36 @@ The result is 393 and 9. Is is different from the 392 and 9 in the exam set, off
 Plot the response against each of the explanatory variables/features and add a smooth line as a very rough indication of how the probability of diabetes depends on the individual feature (note the response has to be numeric for the smooth line to work).
 
 ```{r}
-## {r, fig.height=20, fig.width=14}
-features <- names(diabetesDataset_clean)[names(diabetesDataset_clean) != "Outcomes"]
+## features <- names(diabetesDataset_clean)[names(diabetesDataset_clean) != "Outcomes"]
 
 ## Bulding a response plot using the doBy response_plot function using the data from dat (i.e. the full data set)
-doBy::response_plot(Outcome ~ ., data = diabetesDataset_clean, geoms = c(geom_jitter(alpha = .1, width = .1))) + 
+## doBy::response_plot(Outcome ~ ., data = diabetesDataset_clean, geoms = c(geom_jitter(alpha = .1, width = .1))) + 
  ##theme(aspect.ratio = .1) + 
-  geom_point() +
-  geom_smooth()+ 
-  facet_wrap(~ variable_name) 
+##   geom_point() +
+##   geom_smooth()+ 
+##   facet_wrap(~ variable_name) 
 
 ## Bulding a response plot using the doBy response_plot function using the data from dat (i.e. the full data set)
 diabetesResponse = doBy::response_plot(Outcome ~ ., data = diabetesDataset_clean, geoms = c(geom_jitter(alpha = .1, width = .1), geom_smooth()))+ 
   facet_wrap(~ variable_name)
 
-diabetesResponse + geom_point() +
-  geom_smooth()+ 
-  facet_wrap(~ variable_name)
+## diabetesResponse + geom_point() +
+##   geom_smooth()+ 
+##   facet_wrap(~ variable_name)
 
-diabetesDataset_clean |> doBy::response_plot(Outcome ~ ., geoms = c(geom_jitter(alpha = .1, width = .1))) + 
-  geom_point() +
-  geom_smooth()+ 
-  facet_wrap(~ variable_name) 
+## diabetesDataset_clean |> doBy::response_plot(Outcome ~ ., geoms = c(geom_jitter(alpha = .1, width = .1))) + 
+##   geom_point() +
+##   geom_smooth()+ 
+##   facet_wrap(~ variable_name) 
 
 
-lapply(features, function(feature) {
-  ggplot(diabetesDataset_clean, aes(x = feature, y = "Outcome")) +
-    geom_point(alpha = 0.4) +     # Scatter plot for data points
-    geom_smooth(method = "loess") +  # Add a smooth line
-    labs(title = paste("Diabetes vs", feature), x = feature, y = "Probability of Diabetes") +
-    theme_minimal()
-})
+## lapply(features, function(feature) {
+##   ggplot(diabetesDataset_clean, aes(x = feature, y = "Outcome")) +
+##     geom_point(alpha = 0.4) +     # Scatter plot for data points
+##     geom_smooth(method = "loess") +  # Add a smooth line
+##     labs(title = paste("Diabetes vs", feature), x = feature, y = "Probability of Diabetes") +
+##     theme_minimal()
+## })
 ```
 
 ## **Exercise 3**
@@ -326,6 +435,8 @@ Specify a number of classification models and report the corresponding confusion
 ```{r}
 set.seed(202) # for reproducibility 
 diabetes_i_train <- sample(nrow(diabetesDataset_clean), .5*nrow(diabetesDataset_clean)) 
-diabetes_train <- dat[diabetes_i_train,] 
-diabetes_test <- dat[-diabetes_i_train,]
+diabetes_train <- diabetesDataset_clean[diabetes_i_train,] 
+diabetes_test <- diabetesDataset_clean[-diabetes_i_train,]
 ```
+
+## 
