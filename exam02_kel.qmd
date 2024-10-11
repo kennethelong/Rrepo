@@ -52,15 +52,15 @@ We focus on the variable `easygon` as the response variable. We split the data i
 
 ```{r}
 ## Loading the personality data into dat
-dat <- doBy::personality
+personality_dat <- doBy::personality
 ## Setting a seed for reproducibility. I means that all "random" numbers will start based on the seed
 set.seed(101)
 ## Selects half the data set
-i_train <- sample(nrow(dat), .5*nrow(dat))
+personality_i_train <- sample(nrow(personality_dat), .5*nrow(personality_dat))
 ## Puts one half into train
-train <- dat[i_train,]
+personality_train <- personality_dat[personality_i_train,]
 ## And the other  half into test
-test <- dat[-i_train,]
+personality_test <- personality_dat[-personality_i_train,]
 
 ## column_names <- colnames(dat)
 ## print(column_names)
@@ -72,7 +72,7 @@ Use `response_plot()` from the **development version of** `doBy` to visuali
 
 ```{r, fig.height=20, fig.width=14}
 ## Bulding a response plot using the doBy response_plot function using the data from dat (i.e. the full data set)
-responsePlot <- doBy::response_plot(easygon ~ ., data = dat, geoms = c(geom_jitter(alpha = .5, width = .5))) + 
+responsePlot <- doBy::response_plot(easygon ~ ., data = personality_dat, geoms = c(geom_jitter(alpha = .5, width = .5))) + 
  theme(aspect.ratio = 3) + 
   facet_wrap(~ variable_name, ncol = 15) 
 
@@ -92,7 +92,7 @@ Specify a number of prediction models – at least one of each of the following:
 
 ```{r}
 ## 
-round(10*cor(dat)) |> ggcorrplot(, hc.order = TRUE, type = "lower", lab = TRUE)+ 
+round(10*cor(personality_dat)) |> ggcorrplot(, hc.order = TRUE, type = "lower", lab = TRUE)+ 
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0))
 ```
 
@@ -113,12 +113,12 @@ lm_full \|\> AIC() = 412.0621
 
 lm_1 \|\> AIC() = 440.9609
 
-This indicates that the full model (with the lower AIC of 4is a better fit than the intercept model
+This indicates that the full model (with the lower AIC of 412) is a better fit than the intercept model
 
 ```{r}
 ## Stepwise selection starting from lm_1 and moving forwards using the full model to determine the variables to be included
 lm_forw <- step(lm_1, direction="forward", scope=terms(lm_full), trace=0)
-## Backwards stepwise selection frrom lm_full
+## Backwards stepwise selection from lm_full
 lm_back <- step(lm_full, direction="backward", trace=0)
 ## Stepwise in both directions
 lm_both <- step(lm_1, direction="both", scope=terms(lm_full), trace=0)
@@ -149,12 +149,51 @@ The rmse on the test data, i.e. new data, indicates a good fir with both the for
 
 **(2) Regression Tree**
 
+```{r}
+personality_rpart <- rpart(easygon ~ ., data = personality_train, cp = 0, minsplit = 2, minbucket = 1)
+
+personality_rpart
+```
+
+```{r}
+rpart.plot(personality_rpart, digits = 3)
+
+printcp(personality_rpart)
+
+```
+
+```{r}
+plotcp(personality_rpart)
+```
+
+![](images/clipboard-961595202.png){width="421"}
+
+```{r}
+## The cp value comes from the output of the printcp where the lowest xerror os 0.94679 and the cp value is 0.0561436
+cp_value <- 0.056
+
+## Using the cp value with the prune funtion on the original tree
+personality_rpart_prune <- prune(personality_rpart, cp = cp_value)
+
+par(mfrow = c(2,1))
+
+## Shwoing the full tree
+rpart.plot(personality_rpart, main = "Full tree")
+par(mfrow = c(1,1))
+## Showing the pruned tree based on the cp value
+rpart.plot(personality_rpart_prune, main = paste("Pruned tree, cp:", cp_value))
+
+
+```
+
+From the pruned tree it possible to conclude that the primary predictor for easy going (easygon) people is the laid back (laidbck) score.
+
 **(3) Random Forest**
 
 ```{r}
 set.seed(2024)
 
-personality_random_forest <- randomForest(easygon ~ ., data = train, importance = TRUE)
+personality_random_forest <- randomForest(easygon ~ ., data = personality_train, importance = TRUE)
 
 personality_random_forest
 
@@ -199,20 +238,94 @@ rpart.plot(personality_rpart, digits = 3)
 
 The dataset `diabetes.csv` is about risk factors for diabetes and contains 768 observations of 9 variables. The response variable is `Outcome` which is binary. The goal is to predict `Outcome` using the other variables. A description of the dataset can be found at <https://www.kaggle.com/datasets/mathchi/diabetes-data-set/data>
 
+## **Exercise 1**
+
+Read in and clean the data by detecting unexpected values of some variables, replace the values with `NA` and finally make a data set with only the complete cases.
+
 ```{r}
-## Reading the csv file world_population.csv into world_population_csv. The file is in the root folder, where this file is also found.
+## Reading the csv file diabetes.csv.csv into diabetesDataset_csvv. The file is in the root folder, where this file is also found.
 diabetesDataset_csv <- read_csv("diabetes.csv", col_names = TRUE, col_types = NULL)
 
-diabetesDataset <- diabetesDataset_csv
+diabetesDataset <- diabetesDataset_csv ## Making a separate dataset to be cleaned
 
+## Cleaning the dataset setting incorret values to NA, if insulin is 0, skin thinckness is 0, ages is below 21, if BMI is below 15 and if blood pressure is below 20. Lastely removing all NA values
 diabetesDataset$Insulin[diabetesDataset$Insulin < 1] <- NA
 diabetesDataset$SkinThickness[diabetesDataset$SkinThickness < 1] <- NA
 diabetesDataset$Age[diabetesDataset$Age < 21] <- NA
 diabetesDataset$BMI[diabetesDataset$BMI < 15] <- NA
 diabetesDataset$BloodPressure[diabetesDataset$BloodPressure < 20] <- NA
-
 diabetesDataset_clean <- na.omit(diabetesDataset)
 
 dim(diabetesDataset_clean)
 
+head(diabetesDataset_clean, 10)
+
+```
+
+The result is 393 and 9. Is is different from the 392 and 9 in the exam set, off by one data point.
+
+## **Exercise 2**
+
+Plot the response against each of the explanatory variables/features and add a smooth line as a very rough indication of how the probability of diabetes depends on the individual feature (note the response has to be numeric for the smooth line to work).
+
+```{r}
+## {r, fig.height=20, fig.width=14}
+features <- names(diabetesDataset_clean)[names(diabetesDataset_clean) != "Outcomes"]
+
+## Bulding a response plot using the doBy response_plot function using the data from dat (i.e. the full data set)
+doBy::response_plot(Outcome ~ ., data = diabetesDataset_clean, geoms = c(geom_jitter(alpha = .1, width = .1))) + 
+ ##theme(aspect.ratio = .1) + 
+  geom_point() +
+  geom_smooth()+ 
+  facet_wrap(~ variable_name) 
+
+## Bulding a response plot using the doBy response_plot function using the data from dat (i.e. the full data set)
+diabetesResponse = doBy::response_plot(Outcome ~ ., data = diabetesDataset_clean, geoms = c(geom_jitter(alpha = .1, width = .1), geom_smooth()))+ 
+  facet_wrap(~ variable_name)
+
+diabetesResponse + geom_point() +
+  geom_smooth()+ 
+  facet_wrap(~ variable_name)
+
+diabetesDataset_clean |> doBy::response_plot(Outcome ~ ., geoms = c(geom_jitter(alpha = .1, width = .1))) + 
+  geom_point() +
+  geom_smooth()+ 
+  facet_wrap(~ variable_name) 
+
+
+lapply(features, function(feature) {
+  ggplot(diabetesDataset_clean, aes(x = feature, y = "Outcome")) +
+    geom_point(alpha = 0.4) +     # Scatter plot for data points
+    geom_smooth(method = "loess") +  # Add a smooth line
+    labs(title = paste("Diabetes vs", feature), x = feature, y = "Probability of Diabetes") +
+    theme_minimal()
+})
+```
+
+## **Exercise 3**
+
+Ensure `Outcome` is a `factor` and split the data in a training and test set as follows:
+
+```         
+set.seed(202) # for reproducibility 
+i_train <- sample(nrow(dat), .5*nrow(dat)) 
+train <- dat[i_train,] 
+test <- dat[-i_train,]
+```
+
+Specify a number of classification models and report the corresponding confusion matrix for the test data. You must include at least one of each of the following:
+
+1.  logistic regression with stepwise selection (`glm` / `step`)
+
+2.  regression tree (`rpart`)
+
+3.  random forest (`randomForest`)
+
+4.  linear/quadratic discriminant analysis
+
+```{r}
+set.seed(202) # for reproducibility 
+diabetes_i_train <- sample(nrow(diabetesDataset_clean), .5*nrow(diabetesDataset_clean)) 
+diabetes_train <- dat[diabetes_i_train,] 
+diabetes_test <- dat[-diabetes_i_train,]
 ```
