@@ -93,7 +93,7 @@ Specify a number of prediction models – at least one of each of the following:
 ```{r}
 ## 
 round(10*cor(dat)) |> ggcorrplot(, hc.order = TRUE, type = "lower", lab = TRUE)+ 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 1))
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0))
 ```
 
 ```{r}
@@ -169,16 +169,50 @@ personality_tune <- tuneRF(y = train$easygon, x = select(train, -easygon), impro
 
 ```{r}
 personality_first_tree <- rpart::rpart(easygon ~ carelss + laidbck, data = train, cp = 0)
+
 rpart.plot(personality_first_tree, roundint = FALSE)
 ```
 
 ```{r}
-train |> 
-  ggplot(aes(x = easygon, y = carelss, color = Class)) + 
+dat |> 
+  ggplot(aes(x = carelss, y = laidbck, color = easygon)) + 
   geom_jitter(alpha=0.7) +
-  parttree::geom_parttree(data = personality_first_tree, aes(fill=Class), alpha = 0.1) +
+  parttree::geom_parttree(data = personality_first_tree, aes(fill=easygon), alpha = 0.1) +
   theme_minimal() + 
   scale_y_continuous(n.breaks = 10) + 
   scale_x_continuous(n.breaks = 10)
+
+```
+
+```{r}
+personality_rpart <- rpart(easygon ~ ., data = dat, cp = 0, minsplit = 2, minbucket = 1)
+
+personality_rpart
+
+```
+
+```{r}
+rpart.plot(personality_rpart, digits = 3)
+```
+
+# **Part II - 2: Classification**
+
+The dataset `diabetes.csv` is about risk factors for diabetes and contains 768 observations of 9 variables. The response variable is `Outcome` which is binary. The goal is to predict `Outcome` using the other variables. A description of the dataset can be found at <https://www.kaggle.com/datasets/mathchi/diabetes-data-set/data>
+
+```{r}
+## Reading the csv file world_population.csv into world_population_csv. The file is in the root folder, where this file is also found.
+diabetesDataset_csv <- read_csv("diabetes.csv", col_names = TRUE, col_types = NULL)
+
+diabetesDataset <- diabetesDataset_csv
+
+diabetesDataset$Insulin[diabetesDataset$Insulin < 1] <- NA
+diabetesDataset$SkinThickness[diabetesDataset$SkinThickness < 1] <- NA
+diabetesDataset$Age[diabetesDataset$Age < 21] <- NA
+diabetesDataset$BMI[diabetesDataset$BMI < 15] <- NA
+diabetesDataset$BloodPressure[diabetesDataset$BloodPressure < 20] <- NA
+
+diabetesDataset_clean <- na.omit(diabetesDataset)
+
+dim(diabetesDataset_clean)
 
 ```
