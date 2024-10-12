@@ -42,6 +42,7 @@ library(doBy)
 library(ggcorrplot)
 library(randomForest)
 library(rpart.plot)
+library(Metrics)
 ```
 
 ## **Data**
@@ -76,6 +77,8 @@ responsePlot <- doBy::response_plot(easygon ~ ., data = personality_dat, geoms =
 
 ```
 
+No immediate pattern emerges. Looking closely at laid back (laidbck) there could be the outline of a linear patterns, meaning that the more laid back a person is the more easy going that person may be.
+
 ## **Exercise 3**
 
 Specify a number of prediction models – at least one of each of the following:
@@ -86,16 +89,24 @@ Specify a number of prediction models – at least one of each of the following:
 
 3.  random forest (`randomForest`)
 
-**(1) Stepwise Selection**
+**(1) Step-wise Selection**
 
-```{r}
-## 
-round(10*cor(personality_dat)) |> ggcorrplot(, hc.order = TRUE, type = "lower", lab = TRUE)+ 
+```{r, fig.height=12, fig.width=14}
+
+## Building a correlation heatmap
+
+## Calculating the correlation, rounding of with one decimal
+corr_matrix <- round(cor(personality_dat), 1)
+
+# Create correlation plot
+ggcorrplot(corr_matrix, hc.order = TRUE, type = "lower", lab = TRUE) + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0))
 ```
 
+The heat map shows where there are high degrees of correlation, positive and negative. The strongest positive correlation are between tense and anxious or worrying, shy and quiet, outgoing and talkative or sociable. There is also a strong negative correlation between being organized and being disorganized. This last point seems intuitive.
+
 ```{r}
-## The lm_full uses the data from the "train" data set and with easygon (easy going) as the response variable and all others as predictors
+## The lm_full uses the data from the "train" data set and with easy going (easygon) as the response variable and all others as predictors
 lm_full <- lm(easygon ~ ., data = personality_train)
 ## building a linear regression with no predictors
 lm_1 <- lm(easygon ~ 1, data = personality_train)
@@ -139,23 +150,26 @@ Output inserted to be able to reference, even if the base data were to change
 
 The first row are the output of the AIC on the model_list. A low AIC score indicates a better fit than a higher AIC. AIC on the full model was 412.0621 using the lm function and the score on lm_1 mode was 440.
 
-With the 3 additional models, forward, backward and both directional selection, the forward and backwards model both produce a AIC score of 382.9833, indicating a better fit.
+With the 3 additional models, forward, backward and both directional selection, the forward (lm_forw) and both ways (lm_bith) model both produce a AIC score of 382.9833, indicating a better fit.
 
 The root mean squared error (rmse) calculated on the training data (the data the models were trained on) indicates a good fit on the full model (rmse = 1.0233), followed by the backward model (1.0592).
 
-The rmse on the test data, i.e. new data, indicates a good fir with both the forward and both directional models (rmse = 1.3497) followd by the backward model (rmse = 1.4436). The null model (lm_1) performs worst (rmse = 1.6958)
+The rmse on the test data, i.e. new data, indicates a good fit with both the forward and both directional models (rmse = 1.3497) followd by the backward model (rmse = 1.4436). The null model (lm_1) performs worst (rmse = 1.6958)
 
 **(2) Regression Tree**
 
 ```{r}
+## Fit a regression tree with the training data
 personality_rpart <- rpart(easygon ~ ., data = personality_train, cp = 0, minsplit = 2, minbucket = 1)
 
 personality_rpart
 ```
 
 ```{r}
+## Visualizing the regression tree
 rpart.plot(personality_rpart, digits = 3)
 
+## 
 printcp(personality_rpart)
 
 ```
@@ -239,7 +253,7 @@ personality_resamp1 <-
 # Make predictions for the test data using each resampled model
 predictions <- 
   lapply(personality_resamp1, function(model) {
-    predict(model, newdata = personality_test, type = "class") # Predict class
+    predict(model, newdata = personality_test, type = "class") 
   }) |> 
   set_names(paste0("resample", 1:n_rep)) 
 
@@ -261,16 +275,96 @@ print(results_sample)
 personality_train_ex3 <- personality_train
 personality_test_ex3 <- personality_test
 
+## Setting easygoing as a factor
 personality_train_ex3$easygon <- as.factor(personality_train_ex3$easygon)
 personality_test_ex3$easygon <- as.factor(personality_test_ex3$easygon)
 
-
+## Doing a random forest on the training data set, with 500 trees, and setting type to classification (and not regresseion)
 personality_rf_model <- randomForest(easygon ~ ., data = personality_train_ex3, 
                          importance = TRUE, 
                          ntree = 500, 
                          type = `classification`) 
 
 print(personality_rf_model)
+
+```
+
+```{r}
+```
+
+```{r, fig.height=7}
+## Building and showing a variable importance plot
+varImpPlot(personality_rf_model)
+```
+
+MeanDecreaseAccurency (left graph) shows the personality traits on the y-axis and the mean decrease in accurency on the x-axis. Laid back (laidbck) at the top indicates that this variable is influential when predicting if a person is easy going. The same is true for approving (approvn).
+
+MeanDecreaseGini (right graph) shows personality traits on the y-axis and mean decrease in Gini on the y-axis. Laid back (laidbck) again scores at the top indicating influence on predicting if a person is easy going. The next variable in this graph is relaxed (relaxed).
+
+In both graphs top 5 are laid back at the top. The next 4 variables (approv, persev, relaxed, anxious) are in both graphs but in different places.
+
+This indicates that the most powerful predictor is laid back and then a combination of approv, persev, relaxed and anxious.
+
+```{r}
+## Restating the seed
+set.seed(123)
+
+## Using the tune random forest forest function on the training set. This helps find the number of predictors that gives the an overview of OOB for a set of predictors
+personality_RF_tune <- tuneRF(y = personality_train$easygon, x = select(personality_train, -easygon), improve = 0.001)
+
+print(personality_RF_tune)
+```
+
+Based on the above, using 5 predictors (mtry = 5) provides the model with the lowest out of the bag error (OOB) of 1.78 (1.782553), making it the best performing model.
+
+```{r}
+## Restating the seed
+set.seed(123)
+
+## Tuning the random forest to find the optimal values of hyperparamters for the RF model.
+personality_tune_one <- function(n){
+  output <- tuneRF(y = personality_train$easygon, x = select(personality_train, -easygon), 
+                   ntreeTry = n, improve = 0.05, trace = FALSE, plot = FALSE)
+  return(bind_cols(nTree = n, output))
+}
+
+## Setting a number of trees
+nTree <- c(10, 50, 100, 200, 500, 1000)
+
+## Using the map function to applyt the personality_tune_one function to each number of trees in the nTree list
+OOB_error <- map(nTree, personality_tune_one)
+```
+
+```{r}
+## Building a plot with the output of the previous OOB_error list against each number of trees and mtrys (number of variables to consider at each split)
+OOB_error |> 
+  bind_rows() |> 
+  ggplot(aes(x = mtry, y = OOBError, colour = factor(nTree))) + 
+  geom_point() + geom_line()
+```
+
+**Prediction Based on Test Data**
+
+```{r}
+# Predict the class for test data
+personality_rf_predictions <- predict(personality_rf_model, newdata = personality_test_ex3, type = "class")
+
+print(personality_rf_predictions)
+```
+
+**Calculating the Accuracy of the Prediction**
+
+```{r}
+# Create a confusion matrix
+confusion_matrix <- table(predicted = personality_rf_predictions, actual = personality_test$easygon)
+print(confusion_matrix)
+
+```
+
+```{r}
+# Calculate accuracy
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+print(paste("Accuracy: ", round(accuracy, 3)))
 
 ```
 
