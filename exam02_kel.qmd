@@ -14,13 +14,13 @@ embed-ressources: true
 
 This file contains the work of **Kenneth Elong**. It was submitted for review on the 15th of October.
 
-All exercises were solved by Kenneth Elong. No one else have provided any code for the solving of the exercises. I did however discuss possible solutions and errors I encountered witth a group of students also attending the course.
+All exercises were solved by Kenneth Elong. No one else have provided any code for the solving of the exercises. I did however discuss possible solutions and errors I encountered with a group of students also attending the course.
 
-~~The exercises were found in the file *exam1.html* in the *Eksamensprojekter* in <https://www.moodle.aau.dk/mod/folder/view.php?id=1812259>~~
+The exercises were found in the file *exam2.html* in the *Eksamensprojekter* in <https://www.moodle.aau.dk/mod/folder/view.php?id=1812259>
 
 I have included the exercise description for each exercise for reference. In some cases the expected output is also included.
 
-~~This work can also be found on github at <https://github.com/kennethelong/Rrepo/blob/main/exam01_kel.qmd>~~
+This work can also be found on github at <https://github.com/kennethelong/Rrepo/blob/main/exam02_kel.qmd>
 
 I have not used, or commented it out, View(xx) and mostly relied on head(xx). I have often opted to show the first 10 lines, to give better overview of the result.
 
@@ -65,7 +65,7 @@ personality_test <- personality_dat[-personality_i_train,]
 
 ```
 
-## **Exercise 1**
+## **Exercise 1 - DONE**
 
 Use `response_plot()` from the **development version of** `doBy` to visualize the relation between the response and the other variables in the data.
 
@@ -77,17 +77,17 @@ responsePlot <- doBy::response_plot(easygon ~ ., data = personality_dat, geoms =
 
 ```
 
-No immediate pattern emerges. Looking closely at laid back (laidbck) there could be the outline of a linear patterns, meaning that the more laid back a person is the more easy going that person may be.
+No immediate pattern emerges. Looking closely at laid back (laidbck) there could be the outline of a linear patterns, meaning that the more laid back a person is the more easy going that person may be. Let's investigate that further in coming exercises :-)
 
 ## **Exercise 3**
 
 Specify a number of prediction models – at least one of each of the following:
 
-1.  linear with stepwise selection (`lm` / `step`)
+1.  linear with stepwise selection (`lm` / `step`) - ALMOST DONE
 
-2.  regression tree (`rpart`)
+2.  regression tree (`rpart`) - MISSING PREDICTION
 
-3.  random forest (`randomForest`)
+3.  random forest (`randomForest`) - DONE
 
 **(1) Step-wise Selection**
 
@@ -103,7 +103,7 @@ ggcorrplot(corr_matrix, hc.order = TRUE, type = "lower", lab = TRUE) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0))
 ```
 
-The heat map shows where there are high degrees of correlation, positive and negative. The strongest positive correlation are between tense and anxious or worrying, shy and quiet, outgoing and talkative or sociable. There is also a strong negative correlation between being organized and being disorganized. This last point seems intuitive.
+The heat map shows where there are high degrees of correlation, positive (towards 1) and negative (towards -1). The strongest positive correlation are between tense and anxious or worrying, shy and quiet, outgoing and talkative or sociable. There is also a strong negative correlation between being organized and being disorganized. This last point seems intuitive.
 
 ```{r}
 ## The lm_full uses the data from the "train" data set and with easy going (easygon) as the response variable and all others as predictors
@@ -134,14 +134,21 @@ lm_both <- step(lm_1, direction="both", scope=terms(lm_full), trace=0)
 
 ## Creating a list of the models
 model_list <- list(lm_1=lm_1, lm_forw=lm_forw, lm_both=lm_both, lm_back=lm_back, lm_full=lm_full)
+
 ## Apply the AIC for each model
 model_list |> sapply(AIC)
 
+## NOTE TO PROFESSORS -> FOR SOME UNKNOWN REASON RMSE STOPPED WORKING, SO I DEFINE THIS TEMP RMSE
+temp_rmse <- function(model, data) {
+    predictions <- predict(model, newdata = data)
+    sqrt(mean((data$easygon - predictions)^2, na.rm = TRUE))
+}
+
 ## Apply the root mean squared error (rmse) on the train data set
-model_list |> sapply(function(x) rmse(x, personality_train))
+model_list |> sapply(function(x) temp_rmse(x, personality_train))
 
 ## Apply the rmse on the test set
-model_list |> sapply(function(x) rmse(x, personality_test))
+model_list |> sapply(function(x) temp_rmse(x, personality_test))
 ```
 
 Output inserted to be able to reference, even if the base data were to change
@@ -158,6 +165,11 @@ The rmse on the test data, i.e. new data, indicates a good fit with both the for
 
 **(2) Regression Tree**
 
+1.  **Full Tree**: Firstly the full tree is build
+2.  **Pruning**: After reviewing the full tree and accompanying complexity parameters (CP), we'll find a suitable cp for the pruning
+3.  **Prediction**: To see how powerfully model can predict it will run on the test data set
+4.  **Model Evaluation**: A calculation will be made to identify the model's accurency
+
 ```{r}
 ## Fit a regression tree with the training data
 personality_rpart <- rpart(easygon ~ ., data = personality_train, cp = 0, minsplit = 2, minbucket = 1)
@@ -169,16 +181,21 @@ personality_rpart
 ## Visualizing the regression tree
 rpart.plot(personality_rpart, digits = 3)
 
-## 
+## Printing the table of complexity parameters (CP)
 printcp(personality_rpart)
 
 ```
 
+This tree doesn't tell us much, it's too complex. The print of the CP Plot on the other hand provides us with some useful insights - see next section.
+
 ```{r}
+## Printing the table of complexity parameters (CP)
 plotcp(personality_rpart)
 ```
 
 ![](images/clipboard-961595202.png){width="421"}
+
+Looking at the complexity parameters gives us an understanding of how many splits provides a low xerror. The lowest xerror (0.94679) is at split 2 which has a CP of 0.0561436. This is a good candidate as it 1) works with few splits and 2) has a low xerror
 
 ```{r}
 ## The cp value comes from the output of the printcp where the lowest xerror os 0.94679 and the cp value is 0.0561436
@@ -200,6 +217,8 @@ rpart.plot(personality_rpart_prune, main = paste("Pruned tree, cp:", cp_value))
 
 From the pruned tree it possible to conclude that the primary predictor for easy going (easygon) people is the laid back (laidbck) score.
 
+This is in line with earlier conclusions.
+
 People who score less than 6 of being laid back, have an average score 5.4 for easy going. Within this group relaxed (relaxed) becomes important. People scoring below 6 on relaxed, score 5.2 on easy going.
 
 People with a laid back score above 6 score 6.8 on easy going. Among this group tenseness (tense) becomes important. People scoring below 7 on tenseness score 4 on easy going, while people scoring 7 or above on tenseness score 6.9 on easy going.
@@ -207,69 +226,44 @@ People with a laid back score above 6 score 6.8 on easy going. Among this group 
 **Prediction model**
 
 ```{r}
-personality_rpart_temp <- rpart(easygon ~ ., data = personality_train, method = "class")
+# Predict the class for test data
+personality_tree_predictions <- predict(personality_rpart_prune, newdata = personality_test)
 
-personality_pred  <- as_tibble(predict(personality_rpart_temp, type = "prob")) 
-##|> mutate(pred_class = ifelse(easygon > 0.5, "easy-going", "not_easy-going"))
+print(personality_rf_predictions)
 
-personality_pred <- personality_pred |>
-  mutate(pred_class = ifelse(easygon > 0.5, "easygoing", "not_easygoing"))
-
+model_rmse_tree <- rmse(personality_test$easygon, personality_tree_predictions)
+print(model_rmse_tree)
 ```
 
-Some text
+The RMSE of 1.51 means that the model will predict a e.g. 5 being some between 3.5-6.5 on average.
+
+**Calculating the Accuracy of the Prediction**
 
 ```{r}
-set.seed(123)
-N <- nrow(personality_dat)
-n_rep <- 4
-row_index <- replicate(n_rep, 
-                       sample(N, size = N, replace = TRUE), 
-                       simplify = FALSE)
-
-personality_resamp <- 
-  lapply(row_index, function(x) rpart(easygon ~ ., data = personality_dat, subset = x))
-
-par(mfrow = c(2,2))
-for (i in 1:length(personality_resamp)) {
-  # Create the plot for each resampled tree
-  rpart.plot(personality_resamp[[i]], main = paste(i, "subsample"))
-}
-
+# Create a confusion matrix 
+confusion_matrix_tree <- table(predicted = personality_tree_predictions, actual = personality_test$easygon) 
+print(confusion_matrix) 
 ```
 
-**(3) Random Forest**
+Rounded (5.15 = 5.0, 5.54 = 5.5, 6.9464 = 7.0) for sake of making interpret.
+
+The model predicts several values being in neighboring categories, suggesting that the models does not offer very correct prediction.
 
 ```{r}
+# Calculate accuracy 
+accuracy <- sum(diag(confusion_matrix_tree)) / sum(confusion_matrix_tree) 
+print(paste("Accuracy: ", round(accuracy, 3)))
+```
+
+The accuracy of the model is calculated to be 10.8%
+
+Overall the model does seem to offer
+
+### **(3) Random Forest**
+
+```{r}
+## Setting the seed
 set.seed(123)
-
-
-personality_resamp1 <- 
-  lapply(row_index, function(x) {
-    # Fit a random forest model for each resample (or use rpart if desired)
-    randomForest(easygon ~ ., data = personality_dat, subset = x)
-  })
-
-# Make predictions for the test data using each resampled model
-predictions <- 
-  lapply(personality_resamp1, function(model) {
-    predict(model, newdata = personality_test, type = "class") 
-  }) |> 
-  set_names(paste0("resample", 1:n_rep)) 
-
-results <- 
-  bind_cols(predictions, 
-            true_class = personality_test$easygon) |> 
-  mutate(row = row_number()) |> 
-  relocate(row, true_class)
-
-# Optionally, display a random subset of 10 rows
-results_sample <- slice_sample(results, n = 10)
-
-# Show the output of the randomly selected rows
-print(results_sample)
-
-## ---------------------------
 
 ## Making a local copy
 personality_train_ex3 <- personality_train
@@ -287,9 +281,6 @@ personality_rf_model <- randomForest(easygon ~ ., data = personality_train_ex3,
 
 print(personality_rf_model)
 
-```
-
-```{r}
 ```
 
 ```{r, fig.height=7}
@@ -361,64 +352,22 @@ print(confusion_matrix)
 
 ```
 
+This outlines predicted values versus actual values. For predicted value 6, 11 predictions were correct. It however incorrectly guess a large number especially of 7 (13) and 8 (8). These is cases where the model guess them to be 6 but they were in fact either 7 or 8.
+
 ```{r}
 # Calculate accuracy
 accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
 print(paste("Accuracy: ", round(accuracy, 3)))
-
 ```
 
-\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
+Overall the model can predict in 26.7% of the cases. This is low and the model thus does not overall have a high level of performance.
 
-```{r}
-set.seed(2024)
-
-personality_random_forest <- randomForest(easygon ~ ., data = personality_train, importance = TRUE)
-
-personality_random_forest
-
-varImpPlot(personality_random_forest)
-```
-
-```{r}
-personality_tune <- tuneRF(y = train$easygon, x = select(train, -easygon), improve = 0.001)
-
-
-```
-
-```{r}
-personality_first_tree <- rpart::rpart(easygon ~ carelss + laidbck, data = train, cp = 0)
-
-rpart.plot(personality_first_tree, roundint = FALSE)
-```
-
-```{r}
-dat |> 
-  ggplot(aes(x = carelss, y = laidbck, color = easygon)) + 
-  geom_jitter(alpha=0.7) +
-  parttree::geom_parttree(data = personality_first_tree, aes(fill=easygon), alpha = 0.1) +
-  theme_minimal() + 
-  scale_y_continuous(n.breaks = 10) + 
-  scale_x_continuous(n.breaks = 10)
-
-```
-
-```{r}
-personality_rpart <- rpart(easygon ~ ., data = dat, cp = 0, minsplit = 2, minbucket = 1)
-
-personality_rpart
-
-```
-
-```{r}
-rpart.plot(personality_rpart, digits = 3)
-```
-
-## **Exercise 4**
+## **Exercise 4 - DONE**
 
 For **one of** the linear models show the estimated coefficients and comment **briefly** on the output (for example, comment on the sign of the estimates).
 
-```{r} summary(lm_forw)}
+```{r}
+summary(lm_forw)
 ```
 
 This is a linear model that moves forward to identify the best possible model.
@@ -435,7 +384,50 @@ The two negative predictors persevering (persevr) and harsh (harsh) are negative
 
 Compare the performance of the fitted models by predicting the values of `easygon` for the test data and show a plot comparing the predictions to the observations from the test data. Also make a table of the RMSE for each model.
 
+full_model_list \<- data.frame(model_list_clean)
+
 ```{r}
+### - This does not work as it should
+
+
+## Making the full model list
+model_list_ex5 <- list(
+  lm_1=lm_1, 
+  lm_forw=lm_forw, 
+  lm_both=lm_both, 
+  lm_back=lm_back, 
+  lm_full=lm_full
+
+)
+
+## Observed easygoingness in test data
+results <- data.frame(obs = personality_test$easygoing)
+
+# Function to predict values for each model
+get_predictions <- function(model, data) {
+  return(predict(model, newdata = data))
+}
+
+model_name <- names(model_list_ex5)
+
+# Add predicted values for each model to the results data frame
+for (model_name in names(model_list_ex5)) {
+  results[[model_name]] <- get_predictions(model_list_ex5[[model_name]], personality_test)
+}
+
+ggplot(model_list_ex5, aes(x = easygon, y = pred, color = method))+
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0, color = "black") +
+  facet_wrap(~method, ncol = 3) 
+```
+
+**Table of RMSE for each model**
+
+```{r}
+# Predict the class for test data
+personality_lm_pred <- predict(lm_full, newdata = personality_test)
+
+print(personality_lm_pred)
 ```
 
 # **Part II - 2: Classification**
