@@ -114,8 +114,6 @@ lm_1 <- lm(easygon ~ 1, data = personality_train)
 lm_full |> AIC()
 ## calculates the Akaike Information Criterion (AIC) for lm_1
 lm_1 |> AIC()
-
-
 ```
 
 lm_full \|\> AIC() = 412.0621
@@ -172,47 +170,63 @@ The rmse on the test data, i.e. new data, indicates a good fit with both the for
 
 ```{r}
 ## Fit a regression tree with the training data
-personality_rpart <- rpart(easygon ~ ., data = personality_train, cp = 0, minsplit = 2, minbucket = 1)
+personality_full_tree <- rpart(easygon ~ ., data = personality_train, cp = 0, minsplit = 2, minbucket = 1)
 
-personality_rpart
+personality_full_tree
 ```
 
 ```{r}
 ## Visualizing the regression tree
-rpart.plot(personality_rpart, digits = 3)
+rpart.plot(personality_full_tree, digits = 3)
 
 ## Printing the table of complexity parameters (CP)
-printcp(personality_rpart)
-
+printcp(personality_full_tree)
 ```
 
 This tree doesn't tell us much, it's too complex. The print of the CP Plot on the other hand provides us with some useful insights - see next section.
 
 ```{r}
 ## Printing the table of complexity parameters (CP)
-plotcp(personality_rpart)
+plotcp(personality_full_tree)
 ```
 
-![](images/clipboard-961595202.png){width="421"}
+![](images/clipboard-2333061659.png){width="480"}
 
-Looking at the complexity parameters gives us an understanding of how many splits provides a low xerror. The lowest xerror (0.94679) is at split 2 which has a CP of 0.0561436. This is a good candidate as it 1) works with few splits and 2) has a low xerror
+Looking at the complexity parameters gives us an understanding of how many splits provides a low xerror. The lowest xerror (0.88545) is at split 2 which has a CP of 0.0561436. This is a good candidate as it 1) works with few splits and 2) has a low xerror
 
 ```{r}
-## The cp value comes from the output of the printcp where the lowest xerror os 0.94679 and the cp value is 0.0561436
+## Making a local copy of the test data
+personality_test_rt <- personality_test
+## Converting easygon
+personality_test_rt$easygon <- as.numeric(as.character(personality_test_rt$easygon))
+
+# Predict the class for test data
+personality_full_tree_predictions <- predict(personality_full_tree, newdata = personality_test_rt)
+
+## print(personality_full_tree_predictions)
+
+## Calculating the RMSE for the full tree
+model_rmse_full_tree <- rmse(personality_test$easygon, personality_full_tree_predictions)
+print(model_rmse_full_tree)
+
+```
+
+**Pruning the Tree**
+
+```{r}
+## The cp value comes from the output of the printcp where the lowest xerror os 0.88545 and the cp value is 0.0561436
 cp_value <- 0.056
 
 ## Using the cp value with the prune funtion on the original tree
-personality_rpart_prune <- prune(personality_rpart, cp = cp_value)
+personality_rpart_prune <- prune(personality_full_tree, cp = cp_value)
 
 par(mfrow = c(2,1))
 
 ## Shwoing the full tree
-rpart.plot(personality_rpart, main = "Full tree")
+rpart.plot(personality_full_tree, main = "Full tree")
 par(mfrow = c(1,1))
 ## Showing the pruned tree based on the cp value
 rpart.plot(personality_rpart_prune, main = paste("Pruned tree, cp:", cp_value))
-
-
 ```
 
 From the pruned tree it possible to conclude that the primary predictor for easy going (easygon) people is the laid back (laidbck) score.
@@ -227,12 +241,13 @@ People with a laid back score above 6 score 6.8 on easy going. Among this group 
 
 ```{r}
 # Predict the class for test data
-personality_tree_predictions <- predict(personality_rpart_prune, newdata = personality_test)
+personality_prune_tree_predictions <- predict(personality_rpart_prune, newdata = personality_test_rt)
 
-print(personality_rf_predictions)
+## print(personality_full_tree_predictions)
 
-model_rmse_tree <- rmse(personality_test$easygon, personality_tree_predictions)
-print(model_rmse_tree)
+## Calculating the RMSE for the full tree
+model_rmse_prune_tree <- rmse(personality_test$easygon, personality_prune_tree_predictions)
+print(model_rmse_prune_tree)
 ```
 
 The RMSE of 1.51 means that the model will predict a e.g. 5 being some between 3.5-6.5 on average.
@@ -241,11 +256,11 @@ The RMSE of 1.51 means that the model will predict a e.g. 5 being some between 3
 
 ```{r}
 # Create a confusion matrix 
-confusion_matrix_tree <- table(predicted = personality_tree_predictions, actual = personality_test$easygon) 
+confusion_matrix_tree <- table(predicted = personality_prune_tree_predictions, actual = personality_test$easygon) 
 print(confusion_matrix) 
 ```
 
-Rounded (5.15 = 5.0, 5.54 = 5.5, 6.9464 = 7.0) for sake of making interpret.
+![](images/clipboard-2936182842.png){width="206"}
 
 The model predicts several values being in neighboring categories, suggesting that the models does not offer very correct prediction.
 
@@ -257,15 +272,19 @@ print(paste("Accuracy: ", round(accuracy, 3)))
 
 The accuracy of the model is calculated to be 10.8%
 
-Overall the model does seem to offer
+Overall the model does seem to offer a powerful prediction mechanism.
 
 ### **(3) Random Forest**
+
+For the random forest model, firstly a model is developed using randomForest trained on the training data to create a base line.
+
+### **Baseline RF model**
 
 ```{r}
 ## Setting the seed
 set.seed(123)
 
-## Making a local copy
+## Making a local copy of train and test data
 personality_train_ex3 <- personality_train
 personality_test_ex3 <- personality_test
 
@@ -274,18 +293,17 @@ personality_train_ex3$easygon <- as.factor(personality_train_ex3$easygon)
 personality_test_ex3$easygon <- as.factor(personality_test_ex3$easygon)
 
 ## Doing a random forest on the training data set, with 500 trees, and setting type to classification (and not regresseion)
-personality_rf_model <- randomForest(easygon ~ ., data = personality_train_ex3, 
+baseline_rf <- randomForest(easygon ~ ., data = personality_train_ex3, 
                          importance = TRUE, 
                          ntree = 500, 
                          type = `classification`) 
 
-print(personality_rf_model)
-
+## print(baseline_rf)
 ```
 
 ```{r, fig.height=7}
 ## Building and showing a variable importance plot
-varImpPlot(personality_rf_model)
+varImpPlot(baseline_rf)
 ```
 
 MeanDecreaseAccurency (left graph) shows the personality traits on the y-axis and the mean decrease in accurency on the x-axis. Laid back (laidbck) at the top indicates that this variable is influential when predicting if a person is easy going. The same is true for approving (approvn).
@@ -296,25 +314,43 @@ In both graphs top 5 are laid back at the top. The next 4 variables (approv, per
 
 This indicates that the most powerful predictor is laid back and then a combination of approv, persev, relaxed and anxious.
 
+### **Predicting and Calculating RMSE for the Baseline RF model**
+
+```{r}
+## Predicting based on test data
+##personality_rf_predictions <- predict(personality_rf_model, newdata = personality_test_ex3)
+baseline_predictions <- predict(baseline_rf, newdata = select(personality_test_ex3, -easygon))
+
+baseline_predictions_numeric <- as.numeric(as.character(baseline_predictions))
+actual_numeric <- as.numeric(as.character(personality_test_ex3$easygon))
+
+## Calculating RMSE
+model_rmse_rf_baseline <- rmse(actual_numeric, baseline_predictions_numeric)
+
+print(model_rmse_rf_baseline)
+```
+
+### **Tuning the Model**
+
 ```{r}
 ## Restating the seed
 set.seed(123)
 
 ## Using the tune random forest forest function on the training set. This helps find the number of predictors that gives the an overview of OOB for a set of predictors
-personality_RF_tune <- tuneRF(y = personality_train$easygon, x = select(personality_train, -easygon), improve = 0.001)
+personality_rf_tune <- tuneRF(y = personality_train$easygon, x = select(personality_test_ex3, -easygon), improve = 0.001)
 
-print(personality_RF_tune)
+print(personality_rf_tune)
 ```
 
-Based on the above, using 5 predictors (mtry = 5) provides the model with the lowest out of the bag error (OOB) of 1.78 (1.782553), making it the best performing model.
+Based on the above, using 5 predictors (mtry = 5) provides the model with the lowest out of the bag error (OOB) of 2.37 (2.373505), making it the best performing model.
 
 ```{r}
 ## Restating the seed
 set.seed(123)
 
 ## Tuning the random forest to find the optimal values of hyperparamters for the RF model.
-personality_tune_one <- function(n){
-  output <- tuneRF(y = personality_train$easygon, x = select(personality_train, -easygon), 
+personality_tune_rf_one <- function(n){
+  output <- tuneRF(y = personality_train$easygon, x = select(personality_test_ex3, -easygon), 
                    ntreeTry = n, improve = 0.05, trace = FALSE, plot = FALSE)
   return(bind_cols(nTree = n, output))
 }
@@ -323,7 +359,7 @@ personality_tune_one <- function(n){
 nTree <- c(10, 50, 100, 200, 500, 1000)
 
 ## Using the map function to applyt the personality_tune_one function to each number of trees in the nTree list
-OOB_error <- map(nTree, personality_tune_one)
+OOB_error <- map(nTree, personality_tune_rf_one)
 ```
 
 ```{r}
@@ -337,10 +373,16 @@ OOB_error |>
 **Prediction Based on Test Data**
 
 ```{r}
-# Predict the class for test data
-personality_rf_predictions <- predict(personality_rf_model, newdata = personality_test_ex3, type = "class")
+## Test
+## personality_rf_predictions <- predict(personality_rf_tune, newdata = select(personality_test_ex3, -easygon), type = "class")
 
-print(personality_rf_predictions)
+personality_predictions <- predict(
+  personality_rf_tune, 
+  newdata = select(personality_test_ex3, -easygon)
+)
+
+
+## print(personality_rf_predictions)
 ```
 
 **Calculating the Accuracy of the Prediction**
@@ -361,6 +403,17 @@ print(paste("Accuracy: ", round(accuracy, 3)))
 ```
 
 Overall the model can predict in 26.7% of the cases. This is low and the model thus does not overall have a high level of performance.
+
+```{r}
+## personality_rf_predictions <- predict(personality_RF_tune, newdata = personality_test)
+personality_rf_predictions <- predict(personality_rf_tune, newdata = personality_test_ex3)
+personality_rf_predictions_numeric <- as.numeric(as.character(personality_rf_predictions))
+actual_numeric <- as.numeric(as.character(personality_test_ex3$easygon))
+
+model_rmse_rf_pruned <- rmse(actual_numeric, personality_rf_predictions_numeric)
+
+print(model_rmse_random_tree)
+```
 
 ## **Exercise 4 - DONE**
 
@@ -424,10 +477,13 @@ ggplot(model_list_ex5, aes(x = easygon, y = pred, color = method))+
 **Table of RMSE for each model**
 
 ```{r}
-# Predict the class for test data
-personality_lm_pred <- predict(lm_full, newdata = personality_test)
 
-print(personality_lm_pred)
+
+model_list |> sapply(function(x) temp_rmse(x, personality_test))
+
+
+
+
 ```
 
 # **Part II - 2: Classification**
