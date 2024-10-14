@@ -339,10 +339,35 @@ set.seed(123)
 ## Using the tune random forest forest function on the training set. This helps find the number of predictors that gives the an overview of OOB for a set of predictors
 personality_rf_tune <- tuneRF(y = personality_train$easygon, x = select(personality_test_ex3, -easygon), improve = 0.001)
 
-print(personality_rf_tune)
+## print(personality_rf_tune)
+
+best_mtry <- personality_rf_tune[which.min(personality_rf_tune[, 2]), 1]
+
+best_mtry
 ```
 
 Based on the above, using 5 predictors (mtry = 5) provides the model with the lowest out of the bag error (OOB) of 2.37 (2.373505), making it the best performing model.
+
+```{r}
+## Redoing the random forst with mtry = optimal best option (5)
+final_rf_mtry <- randomForest(
+  easygon ~ ., 
+  data = personality_train, 
+  mtry = best_mtry, 
+  ntree = 500
+)
+
+## Predicting based on tuend model and the test data
+tuned_predictions <- predict(final_rf_mtry, newdata = select(personality_test_ex3, -easygon))
+
+## Calculating RMSE
+model_rmse_rf_tuned <- rmse(actual_numeric, tuned_predictions)
+
+model_rmse_rf_tuned
+
+```
+
+\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_Under construction
 
 ```{r}
 ## Restating the seed
@@ -376,10 +401,11 @@ OOB_error |>
 ## Test
 ## personality_rf_predictions <- predict(personality_rf_tune, newdata = select(personality_test_ex3, -easygon), type = "class")
 
-personality_predictions <- predict(
+personality_rf_predictions <- predict(
   personality_rf_tune, 
   newdata = select(personality_test_ex3, -easygon)
 )
+personality_rf_predictions <- predict(personality_rf_tune, newdata = select(personality_test_ex3, -easygon))
 
 
 ## print(personality_rf_predictions)
@@ -477,11 +503,32 @@ ggplot(model_list_ex5, aes(x = easygon, y = pred, color = method))+
 **Table of RMSE for each model**
 
 ```{r}
+## Setting all required RMSEs
+model_rmse_lm <- sapply(model_list, function(model) temp_rmse(model, personality_test))
+model_rmse_full_tree <- model_rmse_full_tree
+model_rmse_prune_tree <- model_rmse_prune_tree
+model_rmse_rf_baseline <- model_rmse_rf_baseline 
+model_rmse_rf_tuned <- model_rmse_rf_tuned
 
+# Combine all RMSE values into a single named vector
+model_rmse <- c(model_rmse_lm,
+                 full_tree = model_rmse_full_tree,
+                 prune_tree = model_rmse_prune_tree,
+                 rf_baseline = model_rmse_rf_baseline,
+                 rf_tuned = model_rmse_rf_tuned)
 
-model_list |> sapply(function(x) temp_rmse(x, personality_test))
+# Create a data frame from the RMSE values
+rmse_table <- data.frame(
+  Model = names(model_rmse),
+  RMSE = model_rmse
+)
 
+sorted_rmse_table <- rmse_table |>
+  arrange(RMSE) |> 
+   mutate(RMSE = round(RMSE, 3))
 
+# Print the table
+print(sorted_rmse_table)
 
 
 ```
@@ -521,36 +568,10 @@ The result is 393 and 9. Is is different from the 392 and 9 in the exam set, off
 Plot the response against each of the explanatory variables/features and add a smooth line as a very rough indication of how the probability of diabetes depends on the individual feature (note the response has to be numeric for the smooth line to work).
 
 ```{r}
-## features <- names(diabetesDataset_clean)[names(diabetesDataset_clean) != "Outcomes"]
-
-## Bulding a response plot using the doBy response_plot function using the data from dat (i.e. the full data set)
-## doBy::response_plot(Outcome ~ ., data = diabetesDataset_clean, geoms = c(geom_jitter(alpha = .1, width = .1))) + 
- ##theme(aspect.ratio = .1) + 
-##   geom_point() +
-##   geom_smooth()+ 
-##   facet_wrap(~ variable_name) 
-
 ## Bulding a response plot using the doBy response_plot function using the data from dat (i.e. the full data set)
 diabetesResponse = doBy::response_plot(Outcome ~ ., data = diabetesDataset_clean, geoms = c(geom_jitter(alpha = .1, width = .1), geom_smooth()))+ 
   facet_wrap(~ variable_name)
 
-## diabetesResponse + geom_point() +
-##   geom_smooth()+ 
-##   facet_wrap(~ variable_name)
-
-## diabetesDataset_clean |> doBy::response_plot(Outcome ~ ., geoms = c(geom_jitter(alpha = .1, width = .1))) + 
-##   geom_point() +
-##   geom_smooth()+ 
-##   facet_wrap(~ variable_name) 
-
-
-## lapply(features, function(feature) {
-##   ggplot(diabetesDataset_clean, aes(x = feature, y = "Outcome")) +
-##     geom_point(alpha = 0.4) +     # Scatter plot for data points
-##     geom_smooth(method = "loess") +  # Add a smooth line
-##     labs(title = paste("Diabetes vs", feature), x = feature, y = "Probability of Diabetes") +
-##     theme_minimal()
-## })
 ```
 
 ## **Exercise 3**
