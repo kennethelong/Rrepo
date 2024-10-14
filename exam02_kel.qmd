@@ -165,6 +165,10 @@ The root mean squared error (rmse) calculated on the training data (the data the
 
 The rmse on the test data, i.e. new data, indicates a good fit with both the forward and both directional models (rmse = 1.3497) followd by the backward model (rmse = 1.4436). The null model (lm_1) performs worst (rmse = 1.6958)
 
+**Conclusion**
+
+It would seem that the linear model going forward and in both direction have greater explanatory power. They score lowest on the AIC and perform best both on the training and test data.
+
 **(2) Regression Tree**
 
 1.  **Full Tree**: Firstly the full tree is build (based in training data)
@@ -269,7 +273,7 @@ Not overly convincing but better than the RMSE 1.7 from the unpruned tree.
 ```{r}
 # Create a confusion matrix 
 confusion_matrix_tree <- table(predicted = personality_prune_tree_predictions, actual = personality_test$easygon) 
-print(confusion_matrix) 
+print(confusion_matrix_tree) 
 ```
 
 ![](images/clipboard-2936182842.png){width="206"}
@@ -290,6 +294,8 @@ Overall the model does seem to offer a powerful prediction mechanism.
 
 For the random forest model, firstly a baseline model is developed using randomForest trained on the training data to create a base line.
 
+Prediction is done using the baseline model to establish a baseline RMSE. Next the random forest is tuned and a new model is developed. Again prediction is done and a RMSE is calculated to see if the model improves.
+
 ### **Baseline RF model**
 
 ```{r}
@@ -303,6 +309,8 @@ personality_test_ex3 <- personality_test
 ## Setting easygoing as a factor
 personality_train_ex3$easygon <- as.factor(personality_train_ex3$easygon)
 personality_test_ex3$easygon <- as.factor(personality_test_ex3$easygon)
+personality_train_ex3_woeasy <- dplyr::select(personality_test_ex3, -easygon)
+personality_test_ex3_woeasy <- dplyr::select(personality_test_ex3, -easygon)
 
 ## Doing a random forest on the training data set, with 500 trees, and setting type to classification (and not regresseion)
 baseline_rf <- randomForest(easygon ~ ., data = personality_train_ex3, 
@@ -330,8 +338,7 @@ This indicates that the most powerful predictor is laid back and then a combinat
 
 ```{r}
 ## Predicting based on test data
-##personality_rf_predictions <- predict(personality_rf_model, newdata = personality_test_ex3)
-baseline_predictions <- predict(baseline_rf, newdata = select(personality_test_ex3, -easygon))
+baseline_predictions <- predict(baseline_rf, newdata = personality_train_ex3_woeasy)
 
 baseline_predictions_numeric <- as.numeric(as.character(baseline_predictions))
 actual_numeric <- as.numeric(as.character(personality_test_ex3$easygon))
@@ -353,7 +360,7 @@ Let's see if we can improve that tuning the model.
 set.seed(123)
 
 ## Using the tune random forest forest function on the training set. This helps find the number of predictors that gives the an overview of OOB for a set of predictors
-personality_rf_tune <- tuneRF(y = personality_train$easygon, x = select(personality_test_ex3, -easygon), improve = 0.001)
+personality_rf_tune <- tuneRF(y = personality_train$easygon, x = dplyr::select(personality_test_ex3, -easygon), improve = 0.001)
 
 ## print(personality_rf_tune)
 
@@ -374,7 +381,7 @@ final_rf_mtry <- randomForest(
 )
 
 ## Predicting based on tuend model and the test data
-tuned_predictions <- predict(final_rf_mtry, newdata = select(personality_test_ex3, -easygon))
+tuned_predictions <- predict(final_rf_mtry, newdata = dplyr::select(personality_test_ex3, -easygon))
 
 ## Calculating RMSE
 model_rmse_rf_tuned <- rmse(actual_numeric, tuned_predictions)
@@ -391,7 +398,7 @@ set.seed(123)
 
 ## Tuning the random forest to find the optimal values of hyperparamters for the RF model.
 personality_tune_rf_one <- function(n){
-  output <- tuneRF(y = personality_train$easygon, x = select(personality_test_ex3, -easygon), 
+  output <- tuneRF(y = personality_train$easygon, x = dplyr::select(personality_test_ex3, -easygon), 
                    ntreeTry = n, improve = 0.05, trace = FALSE, plot = FALSE)
   return(bind_cols(nTree = n, output))
 }
@@ -415,10 +422,12 @@ OOB_error |>
 
 ```{r}
 # Create a confusion matrix
-confusion_matrix <- table(predicted = personality_rf_predictions, actual = personality_test$easygon)
+confusion_matrix <- table(predicted = tuned_predictions, actual = personality_test$easygon)
 print(confusion_matrix)
 
 ```
+
+SOMETHING HAPPEND ALONG THE LINE AND THE RESULTS CHANGED, so the below text is based on the original results.
 
 This outlines predicted values versus actual values. For predicted value 6, 11 predictions were correct. It however incorrectly guess a large number especially of 7 (13) and 8 (8). These is cases where the model guess them to be 6 but they were in fact either 7 or 8.
 
@@ -427,6 +436,8 @@ This outlines predicted values versus actual values. For predicted value 6, 11 p
 accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
 print(paste("Accuracy: ", round(accuracy, 3)))
 ```
+
+SOMETHING HAPPEND ALONG THE LINE AND THE RESULTS CHANGED, so the below text is based on the original results.
 
 Overall the model can predict in 26.7% of the cases. This is low and the model thus does not overall have a high level of performance.
 
@@ -520,6 +531,16 @@ sorted_rmse_table <- rmse_table |>
 print(sorted_rmse_table)
 ```
 
+The tables shows the RMSE scores for all used models. The list is sorted beginning with the lowest score.
+
+From this it can be concluded that the linear models forward and both direction have the lowest RMSE score of 1.35, indicating greater explanatory power compared to the other models.
+
+This is followed by the tuned random forest model, with a score of 1.42.
+
+The linear intercept model performs worst, which is not unexpected.
+
+Using the same data to train multiple models, refining them to the extend possible and the juxtaposing them helps us compare them and understand. From this we are able to say something about each model's performance compared to one another.
+
 # **Part II - 2: Classification**
 
 The dataset `diabetes.csv` is about risk factors for diabetes and contains 768 observations of 9 variables. The response variable is `Outcome` which is binary. The goal is to predict `Outcome` using the other variables. A description of the dataset can be found at <https://www.kaggle.com/datasets/mathchi/diabetes-data-set/data>
@@ -582,7 +603,7 @@ Specify a number of classification models and report the corresponding confusion
 
 4.  linear/quadratic discriminant analysis
 
-Time ran out, so not all analysis are performed.
+Time ran out, so not all analysis are performed. I focused on logistic regression and LDA, as they had not been performed in section I.
 
 ```{r}
 set.seed(202) # for reproducibility  
@@ -613,9 +634,6 @@ prop_plot <- diabetesTable |> ggplot(aes(x = Glucose, y = Outcome)) +
   geom_point(aes(y = 1+prop), data = props, col = "red")
 prop_plot
 
-```
-
-```{r}     ## Fitting a LDA model based on the training  diabetes_lda_baseline <- lda(Outcome ~ ., data=diabetes_train)}
 ```
 
 ### Logistic Regression with Step Wise Selection
