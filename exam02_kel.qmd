@@ -24,9 +24,11 @@ This work can also be found on github at <https://github.com/kennethelong/Rrepo/
 
 I have not used, or commented it out, View(xx) and mostly relied on head(xx). I have often opted to show the first 10 lines, to give better overview of the result.
 
-Generally I have made a "local" copy of a the used df for each exercise. This is done in an effort to ensure a high degree of repeatability. Instead of e.g. using df "wpop" from a previous exercise and manipulating it, most often a local version is made e.g. ex2x_wpop \<- wpop. Thereby I do not have to rerun previous exercises to get a df that is required as input.
+Generally I have made a "local" copy of a the used data frame (df) for each exercise. This is done in an effort to ensure a high degree of repeatability. Instead of e.g. using df "wpop" from a previous exercise and manipulating it, most often a local version is made e.g. ex2x_wpop \<- wpop. Thereby I do not have to rerun previous exercises to get a df that is required as input.
 
-To enhance readability steps are broken down and operations performed one at a time. Readability enhances durability of code, because as it may be a computer that executes the commands, it is always a human that will need to understand, change, and reuse the commands.
+Sometime the output is pasted in as a picture to ensure that even if the results change, which the could do as a result of changing e.g. how the data is cleansed, the output on which the comments are made are clear for the reader.
+
+To enhance readability most steps are broken down and operations performed one at a time. Readability enhances durability of code, because as it may be a computer that executes the commands, it is always a human that will need to understand, change, and reuse the commands.
 
 ```{r}
 ## To execute this file the "here" package needs to be installed
@@ -43,6 +45,8 @@ library(ggcorrplot)
 library(randomForest)
 library(rpart.plot)
 library(Metrics)
+library(MASS)
+library(modelr)
 ```
 
 ## **Data**
@@ -54,18 +58,18 @@ We focus on the variable `easygon` as the response variable. We split the data i
 ```{r}
 ## Loading the personality data into dat
 personality_dat <- doBy::personality
-## Setting a seed for reproducibility. I means that all "random" numbers will start based on the seed
+## Setting a seed for reproducibility. It means that all "random" numbers will start based on the seed
 set.seed(101)
 ## Selects half the data set
 personality_i_train <- sample(nrow(personality_dat), .5*nrow(personality_dat))
 ## Puts one half into train
 personality_train <- personality_dat[personality_i_train,]
-## And the other  half into test
+## And the other half into test
 personality_test <- personality_dat[-personality_i_train,]
 
 ```
 
-## **Exercise 1 - DONE**
+## **Exercise 1**
 
 Use `response_plot()` from the **development version of** `doBy` to visualize the relation between the response and the other variables in the data.
 
@@ -83,11 +87,11 @@ No immediate pattern emerges. Looking closely at laid back (laidbck) there could
 
 Specify a number of prediction models – at least one of each of the following:
 
-1.  linear with stepwise selection (`lm` / `step`) - ALMOST DONE
+1.  linear with stepwise selection (`lm` / `step`)
 
-2.  regression tree (`rpart`) - MISSING PREDICTION
+2.  regression tree (`rpart`)
 
-3.  random forest (`randomForest`) - DONE
+3.  random forest (`randomForest`)
 
 **(1) Step-wise Selection**
 
@@ -163,10 +167,10 @@ The rmse on the test data, i.e. new data, indicates a good fit with both the for
 
 **(2) Regression Tree**
 
-1.  **Full Tree**: Firstly the full tree is build
+1.  **Full Tree**: Firstly the full tree is build (based in training data)
 2.  **Pruning**: After reviewing the full tree and accompanying complexity parameters (CP), we'll find a suitable cp for the pruning
 3.  **Prediction**: To see how powerfully model can predict it will run on the test data set
-4.  **Model Evaluation**: A calculation will be made to identify the model's accurency
+4.  **Model Evaluation**: A calculation will be made to identify the model's accuracy
 
 ```{r}
 ## Fit a regression tree with the training data
@@ -200,7 +204,7 @@ personality_test_rt <- personality_test
 ## Converting easygon
 personality_test_rt$easygon <- as.numeric(as.character(personality_test_rt$easygon))
 
-# Predict the class for test data
+# Predicting based on the test data
 personality_full_tree_predictions <- predict(personality_full_tree, newdata = personality_test_rt)
 
 ## print(personality_full_tree_predictions)
@@ -211,7 +215,13 @@ print(model_rmse_full_tree)
 
 ```
 
+The RMSE is 1.7 (1.693123.)
+
+Let's see if we can improve that with pruning :-)
+
 **Pruning the Tree**
+
+Using the baseline tree, now a pruning is performed to identify a better complexity parameter.
 
 ```{r}
 ## The cp value comes from the output of the printcp where the lowest xerror os 0.88545 and the cp value is 0.0561436
@@ -231,7 +241,7 @@ rpart.plot(personality_rpart_prune, main = paste("Pruned tree, cp:", cp_value))
 
 From the pruned tree it possible to conclude that the primary predictor for easy going (easygon) people is the laid back (laidbck) score.
 
-This is in line with earlier conclusions.
+This is in line with earlier conclusions (e.g. response plot).
 
 People who score less than 6 of being laid back, have an average score 5.4 for easy going. Within this group relaxed (relaxed) becomes important. People scoring below 6 on relaxed, score 5.2 on easy going.
 
@@ -251,6 +261,8 @@ print(model_rmse_prune_tree)
 ```
 
 The RMSE of 1.51 means that the model will predict a e.g. 5 being some between 3.5-6.5 on average.
+
+Not overly convincing but better than the RMSE 1.7 from the unpruned tree.
 
 **Calculating the Accuracy of the Prediction**
 
@@ -276,7 +288,7 @@ Overall the model does seem to offer a powerful prediction mechanism.
 
 ### **(3) Random Forest**
 
-For the random forest model, firstly a model is developed using randomForest trained on the training data to create a base line.
+For the random forest model, firstly a baseline model is developed using randomForest trained on the training data to create a base line.
 
 ### **Baseline RF model**
 
@@ -298,7 +310,7 @@ baseline_rf <- randomForest(easygon ~ ., data = personality_train_ex3,
                          ntree = 500, 
                          type = `classification`) 
 
-## print(baseline_rf)
+print(baseline_rf)
 ```
 
 ```{r, fig.height=7}
@@ -329,6 +341,10 @@ model_rmse_rf_baseline <- rmse(actual_numeric, baseline_predictions_numeric)
 
 print(model_rmse_rf_baseline)
 ```
+
+The RMSE is 1.53 for the baseline model.
+
+Let's see if we can improve that tuning the model.
 
 ### **Tuning the Model**
 
@@ -367,7 +383,7 @@ model_rmse_rf_tuned
 
 ```
 
-\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_Under construction
+Before tuning the RMSE was 1.53 and the tuned model is now at 1.42, so an overall improvement.
 
 ```{r}
 ## Restating the seed
@@ -395,22 +411,6 @@ OOB_error |>
   geom_point() + geom_line()
 ```
 
-**Prediction Based on Test Data**
-
-```{r}
-## Test
-## personality_rf_predictions <- predict(personality_rf_tune, newdata = select(personality_test_ex3, -easygon), type = "class")
-
-personality_rf_predictions <- predict(
-  personality_rf_tune, 
-  newdata = select(personality_test_ex3, -easygon)
-)
-personality_rf_predictions <- predict(personality_rf_tune, newdata = select(personality_test_ex3, -easygon))
-
-
-## print(personality_rf_predictions)
-```
-
 **Calculating the Accuracy of the Prediction**
 
 ```{r}
@@ -430,18 +430,7 @@ print(paste("Accuracy: ", round(accuracy, 3)))
 
 Overall the model can predict in 26.7% of the cases. This is low and the model thus does not overall have a high level of performance.
 
-```{r}
-## personality_rf_predictions <- predict(personality_RF_tune, newdata = personality_test)
-personality_rf_predictions <- predict(personality_rf_tune, newdata = personality_test_ex3)
-personality_rf_predictions_numeric <- as.numeric(as.character(personality_rf_predictions))
-actual_numeric <- as.numeric(as.character(personality_test_ex3$easygon))
-
-model_rmse_rf_pruned <- rmse(actual_numeric, personality_rf_predictions_numeric)
-
-print(model_rmse_random_tree)
-```
-
-## **Exercise 4 - DONE**
+## **Exercise 4**
 
 For **one of** the linear models show the estimated coefficients and comment **briefly** on the output (for example, comment on the sign of the estimates).
 
@@ -463,7 +452,7 @@ The two negative predictors persevering (persevr) and harsh (harsh) are negative
 
 Compare the performance of the fitted models by predicting the values of `easygon` for the test data and show a plot comparing the predictions to the observations from the test data. Also make a table of the RMSE for each model.
 
-full_model_list \<- data.frame(model_list_clean)
+**The Plot does not work as it should**
 
 ```{r}
 ### - This does not work as it should
@@ -529,8 +518,6 @@ sorted_rmse_table <- rmse_table |>
 
 # Print the table
 print(sorted_rmse_table)
-
-
 ```
 
 # **Part II - 2: Classification**
@@ -555,7 +542,7 @@ diabetesDataset$BMI[diabetesDataset$BMI < 15] <- NA
 diabetesDataset$BloodPressure[diabetesDataset$BloodPressure < 20] <- NA
 diabetesDataset_clean <- na.omit(diabetesDataset)
 
-dim(diabetesDataset_clean)
+## dim(diabetesDataset_clean)
 
 head(diabetesDataset_clean, 10)
 
@@ -595,11 +582,131 @@ Specify a number of classification models and report the corresponding confusion
 
 4.  linear/quadratic discriminant analysis
 
+Time ran out, so not all analysis are performed.
+
 ```{r}
-set.seed(202) # for reproducibility 
-diabetes_i_train <- sample(nrow(diabetesDataset_clean), .5*nrow(diabetesDataset_clean)) 
-diabetes_train <- diabetesDataset_clean[diabetes_i_train,] 
+set.seed(202) # for reproducibility  
+diabetes_i_train <- sample(nrow(diabetesDataset_clean), .5*nrow(diabetesDataset_clean))  
+diabetes_train <- diabetesDataset_clean[diabetes_i_train,]  
 diabetes_test <- diabetesDataset_clean[-diabetes_i_train,]
+
+## Creating a plot where 1 is set to "has diabetes" and 0 set to "does not have diabetes", using glucose as predictor
+diabetesDataset_clean |>
+  ggplot(aes(x = Glucose, y = factor(Outcome, levels = c(0, 1), labels = c("Does not have diabetes", "Has diabetes")))) +
+  geom_jitter(width = .2, height = .2, alpha = .2) +
+  labs(y = "Outcome", x = "Glucose")
 ```
 
-## 
+This does not give the impression that glucose in and of itself can predict diabetes, though it may have a significant effect.
+
+```{r}
+diabetesTable <- diabetesDataset_clean |> 
+  group_by(Glucose, Outcome) |> 
+  summarise(n = n()) |> 
+  mutate(prop = n / sum(n))
+
+props <- diabetesTable |> 
+  filter(Outcome == 1)
+
+prop_plot <- diabetesTable |> ggplot(aes(x = Glucose, y = Outcome)) +
+  geom_point(alpha = 0) + 
+  geom_point(aes(y = 1+prop), data = props, col = "red")
+prop_plot
+
+```
+
+```{r}     ## Fitting a LDA model based on the training  diabetes_lda_baseline <- lda(Outcome ~ ., data=diabetes_train)}
+```
+
+### Logistic Regression with Step Wise Selection
+
+**Setting up the Model**
+
+```{r}
+## Fitting a logistic regression model based on the training  
+diabetes_logreg_baseline <- glm(Outcome ~ ., data=diabetes_train, family = binomial)
+
+info <- tidy(diabetes_logreg_baseline) |> 
+  mutate(low_ci = estimate-1.96*std.error, high_ci = estimate+1.96*std.error) |> 
+  mutate(exp_low_ci = exp(low_ci), exp_high_ci = exp(high_ci))
+
+info
+
+summary(diabetes_logreg_baseline)
+```
+
+Glucose stands out becuse of a combination of things 1) it has a low standard error of 0.0085 and 2) the estimate is 4.1, meaning that for every unit increase in glucose risk of having diabetes increases by 0.041
+
+**Predicting**
+
+```{r}
+ex3_diabetes_train <- diabetes_train
+ex3_diabetes_test <- diabetes_test
+ex3_diabetes_train$Outcome <- as.factor(diabetes_train$Outcome)
+ex3_diabetes_test$Outcome <- as.factor(diabetes_test$Outcome)
+
+## Fitting a logistic regression model based on the training   
+diabetes_logreg_baseline <- predict(diabetes_logreg_baseline, newdata=ex3_diabetes_test, type = "response")
+
+predicted_classes <- ifelse(diabetes_logreg_baseline > 0.5, 1, 0)
+
+# Check first few predictions
+head(predicted_classes)
+
+confusion_matrix <- table(Predicted = predicted_classes, Actual = diabetes_test$Outcome)
+print(confusion_matrix)
+
+# Calculate accuracy
+accuracy <- sum(diag(confusion_matrix)) / sum(confusion_matrix)
+print(paste("Accuracy:", round(accuracy * 100, 2), "%"))
+```
+
+The logistic regression model has an accuracy of 76.14%
+
+### Linear discriminant analysis
+
+**Setting up the Model**
+
+```{r}
+## Fitting a LDA model based on the training 
+diabetes_lda_baseline <- lda(Outcome ~ ., data=diabetes_train)
+```
+
+**Internal prediction**
+
+```{r}
+## Predicting based on test data 
+diabetes_lda_baseline_int_prediction <- predict(diabetes_lda_baseline, newdata=diabetes_train)$class  
+
+head(diabetes_lda_baseline_int_prediction, 4) 
+
+## Doing a confusion table 
+personality_lda_baseline_tab <- table(Actual = diabetes_train$Outcome, Predicted = diabetes_lda_baseline_int_prediction) 
+
+personality_lda_baseline_tab   
+
+sum(diag(personality_lda_baseline_tab))/sum(personality_lda_baseline_tab)
+```
+
+The accuracy for the internal prediction is 80.6%
+
+**External prediction**
+
+```{r}
+## Predicting based on test data
+diabetes_lda_baseline_ext_prediction <- predict(diabetes_lda_baseline, newdata=diabetes_test)$class
+
+head(diabetes_lda_baseline_ext_prediction, 4)
+
+## Doing a confusion table
+personality_lda_baseline_tab <- table(Actual = diabetes_test$Outcome, Predicted = diabetes_lda_baseline_ext_prediction)
+
+personality_lda_baseline_tab
+
+sum(diag(personality_lda_baseline_tab))/sum(personality_lda_baseline_tab)
+
+```
+
+The accuracy for the external prediction is 76.6%
+
+The external prediction based on the test data is lower than the internal which is based on the training data. Since the model is trained on the same data as is used to predict in the internal model, it would be expected that the accuracy would be higher.
