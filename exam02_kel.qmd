@@ -1,5 +1,5 @@
 ---
-title: "Exam01"
+title: "Exam02"
 author: "Kenneth"
 format: html
 editor: visual
@@ -465,7 +465,7 @@ Compare the performance of the fitted models by predicting the values of `easygo
 
 **The Plot does not work as it should**
 
-```{r}
+```{r, eval=FALSE}
 ### - This does not work as it should
 
 
